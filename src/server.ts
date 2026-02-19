@@ -8,6 +8,7 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { AuthProvider } from './auth.js';
 import { CapiClient } from './capi-client.js';
 import { allGeneratedTools, type ToolRegistration } from './tools/generated/index.js';
+import { allCompositeTools } from './tools/composite/index.js';
 import { getToolSafety } from './safety.js';
 import { createAuditLogger } from './audit.js';
 
@@ -34,15 +35,16 @@ export function createWpeServer(config: WpeServerConfig) {
     capabilities: { tools: {} },
   });
 
-  // Build tool lookup map
+  // Build tool lookup map (generated + composite)
+  const allTools: ToolRegistration[] = [...allGeneratedTools, ...allCompositeTools];
   const toolMap = new Map<string, ToolRegistration>();
-  for (const tool of allGeneratedTools) {
+  for (const tool of allTools) {
     toolMap.set(tool.def.name, tool);
   }
 
   // tools/list handler
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: allGeneratedTools.map((t) => ({
+    tools: allTools.map((t) => ({
       name: t.def.name,
       description: t.def.description,
       inputSchema: {
