@@ -171,7 +171,7 @@ describe('WPE MCP Server', () => {
       }
     });
 
-    it('dispatches wpe_create_site with body parameters', async () => {
+    it('dispatches wpe_create_site with body parameters (tier 3 confirmation flow)', async () => {
       let capturedBody: unknown;
       mockServer.use(
         http.post(`${BASE_URL}/sites`, async ({ request }) => {
@@ -182,9 +182,20 @@ describe('WPE MCP Server', () => {
 
       const { client, wpeServer } = await createConnectedPair();
       try {
-        const result = await client.callTool({
+        // First call returns confirmation prompt (tier 3)
+        const promptResult = await client.callTool({
           name: 'wpe_create_site',
           arguments: { name: 'New Site', account_id: 'acc-1' },
+        });
+        const promptContent = promptResult.content as Array<{ type: string; text: string }>;
+        const prompt = JSON.parse(promptContent[0].text);
+        expect(prompt.requiresConfirmation).toBe(true);
+        expect(prompt.confirmationToken).toBeTruthy();
+
+        // Second call with token executes
+        const result = await client.callTool({
+          name: 'wpe_create_site',
+          arguments: { name: 'New Site', account_id: 'acc-1', _confirmationToken: prompt.confirmationToken },
         });
         expect(result.isError).toBeFalsy();
         expect(capturedBody).toEqual({ name: 'New Site', account_id: 'acc-1' });
