@@ -18,7 +18,9 @@
     "test:unit": "vitest run test/unit",
     "test:component": "vitest run test/component",
     "test:integration": "vitest run test/integration",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "generate-reference": "tsx codegen/generate-reference.ts",
+    "package": "npm run build && npm pack"
   },
   "local": {
     "minVersion": "9.0.0"
