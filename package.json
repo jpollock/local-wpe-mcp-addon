@@ -1,0 +1,36 @@
+{
+  "name": "@wpengine/capi-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for the WP Engine Customer API",
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "wpe-mcp": "dist/bin/mcp-stdio.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "codegen": "tsx codegen/generate.ts",
+    "drift-check": "tsx codegen/drift-check.ts",
+    "fetch-swagger": "curl -s https://api.wpengineapi.com/v1/swagger > data/swagger.json",
+    "start:stdio": "tsx bin/mcp-stdio.ts",
+    "start:http": "tsx bin/mcp-http.ts",
+    "test": "vitest run",
+    "test:unit": "vitest run test/unit",
+    "test:component": "vitest run test/component",
+    "test:integration": "vitest run test/integration",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "msw": "^2.7.3",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
