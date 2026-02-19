@@ -3,6 +3,11 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
+  ListResourcesRequestSchema,
+  ListResourceTemplatesRequestSchema,
+  ReadResourceRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { AuthProvider } from './auth.js';
@@ -11,12 +16,120 @@ import { allGeneratedTools, type ToolRegistration } from './tools/generated/inde
 import { allCompositeTools } from './tools/composite/index.js';
 import { getToolSafety } from './safety.js';
 import { createAuditLogger } from './audit.js';
+import {
+  INSTRUCTIONS,
+  getGuideContent,
+  getWorkflowContent,
+  listWorkflows,
+} from './content/index.js';
 
 export interface WpeServerConfig {
   authProvider: AuthProvider;
   serverInfo?: { name: string; version: string };
   auditLogPath?: string;
 }
+
+// --- Resource definitions ---
+
+interface ResourceDef {
+  uri: string;
+  name: string;
+  description: string;
+}
+
+const GUIDE_TOPICS = ['domain-model', 'safety', 'troubleshooting'];
+
+function buildStaticResources(): ResourceDef[] {
+  const resources: ResourceDef[] = [];
+
+  for (const topic of GUIDE_TOPICS) {
+    resources.push({
+      uri: `wpengine://guide/${topic}`,
+      name: `WP Engine Guide: ${topic}`,
+      description: `Guide content for ${topic}`,
+    });
+  }
+
+  for (const workflow of listWorkflows()) {
+    resources.push({
+      uri: `wpengine://guide/workflows/${workflow}`,
+      name: `Workflow: ${workflow}`,
+      description: `Step-by-step guide for ${workflow}`,
+    });
+  }
+
+  return resources;
+}
+
+// Resource templates for entity browser (parameterized URIs)
+const RESOURCE_TEMPLATES = [
+  { uriTemplate: 'wpengine://account/{account_id}', name: 'Account details', description: 'Get details for a specific account' },
+  { uriTemplate: 'wpengine://account/{account_id}/sites', name: 'Account sites', description: 'List sites for an account' },
+  { uriTemplate: 'wpengine://install/{install_id}', name: 'Install details', description: 'Get details for a specific install' },
+];
+
+// --- Prompt definitions ---
+
+interface PromptDef {
+  name: string;
+  description: string;
+  arguments: Array<{ name: string; description: string; required: boolean }>;
+  template: (args: Record<string, string>) => string;
+}
+
+const PROMPTS: PromptDef[] = [
+  {
+    name: 'diagnose-site',
+    description: 'Diagnose performance and health issues for a WP Engine install',
+    arguments: [{ name: 'install_id', description: 'The install ID to diagnose', required: true }],
+    template: (args) =>
+      `Diagnose the WP Engine install ${args.install_id}. Use the wpe_diagnose_site tool to get a health snapshot, then analyze the results. Check for: traffic anomalies, missing SSL, backup gaps, storage concerns. Read wpengine://guide/troubleshooting for diagnostic patterns.`,
+  },
+  {
+    name: 'account-health',
+    description: 'Assess overall health of a WP Engine account',
+    arguments: [{ name: 'account_id', description: 'The account ID to assess', required: true }],
+    template: (args) =>
+      `Assess the health of WP Engine account ${args.account_id}. Use wpe_account_overview for a summary, then check wpe_account_ssl_status for SSL issues and wpe_account_backups for backup coverage. Flag any installs that need attention.`,
+  },
+  {
+    name: 'setup-staging',
+    description: 'Guide through creating a staging environment',
+    arguments: [
+      { name: 'source_install_id', description: 'The production install to copy from', required: true },
+      { name: 'site_id', description: 'The site to create staging under', required: true },
+      { name: 'account_id', description: 'The account ID', required: true },
+    ],
+    template: (args) =>
+      `Set up a staging environment for install ${args.source_install_id} on site ${args.site_id} (account ${args.account_id}). Read wpengine://guide/workflows/staging-refresh for the workflow. Use wpe_setup_staging to create and copy, then verify with wpe_diagnose_site.`,
+  },
+  {
+    name: 'go-live-checklist',
+    description: 'Run a pre-launch verification checklist',
+    arguments: [{ name: 'install_id', description: 'The install ID going live', required: true }],
+    template: (args) =>
+      `Run a go-live checklist for install ${args.install_id}. Use wpe_prepare_go_live to check domains, SSL, and backups. Read wpengine://guide/workflows/go-live for the full workflow. Report each check as pass/fail/warning.`,
+  },
+  {
+    name: 'domain-migration',
+    description: 'Guide through migrating to a new domain',
+    arguments: [
+      { name: 'install_id', description: 'The install ID to migrate', required: true },
+      { name: 'new_domain', description: 'The new domain name', required: true },
+    ],
+    template: (args) =>
+      `Migrate install ${args.install_id} to domain ${args.new_domain}. Read wpengine://guide/workflows/domain-migration for the step-by-step process. Check current domains with wpe_get_domains, add the new domain, configure DNS, request SSL, then set as primary.`,
+  },
+  {
+    name: 'security-review',
+    description: 'Review SSL certificates and user access for an account',
+    arguments: [{ name: 'account_id', description: 'The account ID to review', required: true }],
+    template: (args) =>
+      `Perform a security review of account ${args.account_id}. Check SSL certificate status across all installs using wpe_account_ssl_status. Review account users with wpe_get_account_users. Flag expiring certificates, missing SSL, and review user access levels. Read wpengine://guide/safety for safety guidelines.`,
+  },
+];
+
+// --- Server factory ---
 
 export function createWpeServer(config: WpeServerConfig) {
   const { authProvider } = config;
@@ -32,7 +145,12 @@ export function createWpeServer(config: WpeServerConfig) {
   const pendingTokens = new Map<string, string>();
 
   const server = new Server(serverInfo, {
-    capabilities: { tools: {} },
+    capabilities: {
+      tools: {},
+      resources: {},
+      prompts: {},
+    },
+    instructions: INSTRUCTIONS,
   });
 
   // Build tool lookup map (generated + composite)
@@ -42,7 +160,8 @@ export function createWpeServer(config: WpeServerConfig) {
     toolMap.set(tool.def.name, tool);
   }
 
-  // tools/list handler
+  // --- Tool handlers ---
+
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: allTools.map((t) => ({
       name: t.def.name,
@@ -55,7 +174,6 @@ export function createWpeServer(config: WpeServerConfig) {
     })),
   }));
 
-  // tools/call handler
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const toolName = request.params.name;
     const tool = toolMap.get(toolName);
@@ -75,7 +193,6 @@ export function createWpeServer(config: WpeServerConfig) {
       const token = args._confirmationToken as string | undefined;
 
       if (!token) {
-        // Generate confirmation prompt
         const confirmationToken = randomBytes(16).toString('hex');
         pendingTokens.set(confirmationToken, toolName);
 
@@ -105,7 +222,6 @@ export function createWpeServer(config: WpeServerConfig) {
         };
       }
 
-      // Validate token
       const expectedTool = pendingTokens.get(token);
       if (expectedTool !== toolName) {
         const duration_ms = Date.now() - startTime;
@@ -126,11 +242,9 @@ export function createWpeServer(config: WpeServerConfig) {
         };
       }
 
-      // Consume the token (single-use)
       pendingTokens.delete(token);
     }
 
-    // Strip internal params before passing to handler
     const handlerArgs = { ...args };
     delete handlerArgs._confirmationToken;
 
@@ -172,6 +286,138 @@ export function createWpeServer(config: WpeServerConfig) {
         isError: true,
       };
     }
+  });
+
+  // --- Resource handlers ---
+
+  const staticResources = buildStaticResources();
+
+  server.setRequestHandler(ListResourcesRequestSchema, async () => ({
+    resources: staticResources,
+  }));
+
+  server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => ({
+    resourceTemplates: RESOURCE_TEMPLATES,
+  }));
+
+  server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+    const uri = request.params.uri;
+
+    // Static guide content: wpengine://guide/{topic}
+    const guideMatch = uri.match(/^wpengine:\/\/guide\/(?!workflows\/)(.+)$/);
+    if (guideMatch) {
+      const content = getGuideContent(guideMatch[1]!);
+      if (content) {
+        return { contents: [{ uri, text: content, mimeType: 'text/markdown' }] };
+      }
+      return {
+        contents: [{
+          uri,
+          text: `Guide not found: ${guideMatch[1]}. Available guides: ${GUIDE_TOPICS.join(', ')}`,
+          mimeType: 'text/plain',
+        }],
+      };
+    }
+
+    // Workflow content: wpengine://guide/workflows/{name}
+    const workflowMatch = uri.match(/^wpengine:\/\/guide\/workflows\/(.+)$/);
+    if (workflowMatch) {
+      const content = getWorkflowContent(workflowMatch[1]!);
+      if (content) {
+        return { contents: [{ uri, text: content, mimeType: 'text/markdown' }] };
+      }
+      const available = listWorkflows();
+      return {
+        contents: [{
+          uri,
+          text: `Workflow not found: ${workflowMatch[1]}. Available workflows: ${available.join(', ')}`,
+          mimeType: 'text/plain',
+        }],
+      };
+    }
+
+    // Entity browser: wpengine://account/{id}
+    const accountMatch = uri.match(/^wpengine:\/\/account\/([^/]+)$/);
+    if (accountMatch) {
+      const resp = await client.get(`/accounts/${accountMatch[1]}`);
+      return {
+        contents: [{
+          uri,
+          text: resp.ok ? JSON.stringify(resp.data, null, 2) : JSON.stringify({ error: resp.error }, null, 2),
+          mimeType: 'application/json',
+        }],
+      };
+    }
+
+    // Entity browser: wpengine://account/{id}/sites
+    const accountSitesMatch = uri.match(/^wpengine:\/\/account\/([^/]+)\/sites$/);
+    if (accountSitesMatch) {
+      const resp = await client.getAll('/sites', { account_id: accountSitesMatch[1]! });
+      return {
+        contents: [{
+          uri,
+          text: resp.ok ? JSON.stringify(resp.data, null, 2) : JSON.stringify({ error: resp.error }, null, 2),
+          mimeType: 'application/json',
+        }],
+      };
+    }
+
+    // Entity browser: wpengine://install/{id}
+    const installMatch = uri.match(/^wpengine:\/\/install\/([^/]+)$/);
+    if (installMatch) {
+      const resp = await client.get(`/installs/${installMatch[1]}`);
+      return {
+        contents: [{
+          uri,
+          text: resp.ok ? JSON.stringify(resp.data, null, 2) : JSON.stringify({ error: resp.error }, null, 2),
+          mimeType: 'application/json',
+        }],
+      };
+    }
+
+    return {
+      contents: [{ uri, text: `Unknown resource: ${uri}`, mimeType: 'text/plain' }],
+    };
+  });
+
+  // --- Prompt handlers ---
+
+  const promptMap = new Map<string, PromptDef>();
+  for (const prompt of PROMPTS) {
+    promptMap.set(prompt.name, prompt);
+  }
+
+  server.setRequestHandler(ListPromptsRequestSchema, async () => ({
+    prompts: PROMPTS.map((p) => ({
+      name: p.name,
+      description: p.description,
+      arguments: p.arguments,
+    })),
+  }));
+
+  server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    const promptName = request.params.name;
+    const prompt = promptMap.get(promptName);
+    if (!prompt) {
+      throw new Error(`Unknown prompt: ${promptName}`);
+    }
+
+    const args = (request.params.arguments ?? {}) as Record<string, string>;
+
+    // Validate required arguments
+    for (const arg of prompt.arguments) {
+      if (arg.required && !args[arg.name]) {
+        throw new Error(`Missing required argument: ${arg.name}`);
+      }
+    }
+
+    return {
+      description: prompt.description,
+      messages: [{
+        role: 'user' as const,
+        content: { type: 'text' as const, text: prompt.template(args) },
+      }],
+    };
   });
 
   return {
