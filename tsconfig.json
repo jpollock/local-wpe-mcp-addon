@@ -17,8 +17,9 @@
     "isolatedModules": true,
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    "jsx": "react-jsx"
   },
-  "include": ["src/**/*.ts", "bin/**/*.ts", "codegen/**/*.ts"],
-  "exclude": ["node_modules", "dist", "test"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "bin/**/*.ts", "codegen/**/*.ts"],
+  "exclude": ["node_modules", "dist", "test", "src/local-addon/renderer"]
 }

@@ -20,6 +20,13 @@
     "test:integration": "vitest run test/integration",
     "test:watch": "vitest"
   },
+  "local": {
+    "minVersion": "9.0.0"
+  },
+  "permissions": {
+    "services": ["wpeOAuth"],
+    "network": ["api.wpengineapi.com"]
+  },
   "engines": {
     "node": ">=18.0.0"
   },
