@@ -18,15 +18,20 @@
    - Tool: `wpe_create_install({ name, account_id, site_id, environment })`
    - Check: Note the returned `install_id`
 
-3. **Configure domains**
+3. **Wait for provisioning**
+   - Tool: `wpe_get_install({ install_id })`
+   - Check: Poll until install status is "active" — provisioning is async and may take several minutes
+   - **Important:** Do NOT proceed until the install is active
+
+4. **Configure domains**
    - Tool: `wpe_create_domain({ install_id, name, primary: true })`
    - Check: Domain appears in `wpe_get_domains`
 
-4. **Request SSL certificate**
+5. **Request SSL certificate**
    - Tool: `wpe_request_ssl_certificate({ install_id, domain_id })`
    - Check: Certificate status via `wpe_get_ssl_certificates`
 
-5. **Verify the setup**
+6. **Verify the setup**
    - Tool: `wpe_diagnose_site({ install_id })`
    - Check: All health checks pass
 

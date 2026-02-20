@@ -34,7 +34,6 @@ All GET operations. Safe to call freely.
 - **create_install** — provisions billable infrastructure
 - **copy_install** — OVERWRITES target install's files and database
 - **create_account_user** — grants access to account
-- **setup_staging** — creates install and copies data
 
 ## Pre-Check Requirements
 

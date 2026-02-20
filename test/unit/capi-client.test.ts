@@ -12,14 +12,13 @@ beforeAll(() => mockServer.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());
 
-function createClient(overrides?: { maxConcurrency?: number; retryOn429?: boolean }) {
+function createClient(overrides?: { retryOn429?: boolean }) {
   process.env['WP_ENGINE_API_USERNAME'] = 'testuser';
   process.env['WP_ENGINE_API_PASSWORD'] = 'testpass';
   const auth = createAuthProvider();
   return new CapiClient({
     baseUrl: BASE_URL,
     authProvider: auth,
-    maxConcurrency: overrides?.maxConcurrency ?? 5,
     retryOn429: overrides?.retryOn429 ?? true,
   });
 }

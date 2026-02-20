@@ -16,6 +16,7 @@ import { allGeneratedTools, type ToolRegistration } from './tools/generated/inde
 import { allCompositeTools } from './tools/composite/index.js';
 import { getToolSafety } from './safety.js';
 import { createAuditLogger } from './audit.js';
+import { hasSummarizer, applySummarization } from './summarize.js';
 import {
   INSTRUCTIONS,
   getGuideContent,
@@ -90,7 +91,7 @@ const PROMPTS: PromptDef[] = [
     description: 'Assess overall health of a WP Engine account',
     arguments: [{ name: 'account_id', description: 'The account ID to assess', required: true }],
     template: (args) =>
-      `Assess the health of WP Engine account ${args.account_id}. Use wpe_account_overview for a summary, then check wpe_account_ssl_status for SSL issues and wpe_account_backups for backup coverage. Flag any installs that need attention.`,
+      `Assess the health of WP Engine account ${args.account_id}. Use wpe_account_overview for a summary, then check wpe_account_ssl_status for SSL issues. Flag any installs that need attention.`,
   },
   {
     name: 'setup-staging',
@@ -101,7 +102,7 @@ const PROMPTS: PromptDef[] = [
       { name: 'account_id', description: 'The account ID', required: true },
     ],
     template: (args) =>
-      `Set up a staging environment for install ${args.source_install_id} on site ${args.site_id} (account ${args.account_id}). Read wpengine://guide/workflows/staging-refresh for the workflow. Use wpe_setup_staging to create and copy, then verify with wpe_diagnose_site.`,
+      `Set up a staging environment for install ${args.source_install_id} on site ${args.site_id} (account ${args.account_id}). Read wpengine://guide/workflows/staging-refresh for the workflow. Steps: 1) Create a staging install with wpe_create_install (environment: "staging"), 2) Poll wpe_get_install until the install status is "active" (provisioning is async and may take several minutes), 3) Copy data from the source with wpe_copy_install, 4) Verify with wpe_diagnose_site.`,
   },
   {
     name: 'go-live-checklist',
@@ -141,8 +142,8 @@ export function createWpeServer(config: WpeServerConfig) {
   const client = new CapiClient({ authProvider });
   const auditLogger = createAuditLogger(config.auditLogPath);
 
-  // Pending confirmation tokens: token → toolName (single-use)
-  const pendingTokens = new Map<string, string>();
+  // Pending confirmation tokens: token → { toolName, params } (single-use)
+  const pendingTokens = new Map<string, { toolName: string; params: Record<string, unknown> }>();
 
   const server = new Server(serverInfo, {
     capabilities: {
@@ -163,15 +164,43 @@ export function createWpeServer(config: WpeServerConfig) {
   // --- Tool handlers ---
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: allTools.map((t) => ({
-      name: t.def.name,
-      description: t.def.description,
-      inputSchema: {
-        type: 'object' as const,
-        properties: t.def.inputSchema.properties,
-        ...(t.def.inputSchema.required ? { required: t.def.inputSchema.required } : {}),
-      },
-    })),
+    tools: allTools.map((t) => {
+      const isSummarizable = hasSummarizer(t.def.name);
+      const safety = getToolSafety(t.def.name, t.def.annotations.httpMethod);
+      let properties = { ...t.def.inputSchema.properties };
+
+      if (isSummarizable) {
+        properties.summary = {
+          type: 'boolean',
+          description:
+            'Return condensed summary (default: true). Set false for full detailed response.',
+          default: true,
+        };
+      }
+
+      if (safety.tier === 3) {
+        properties._confirmationToken = {
+          type: 'string',
+          description:
+            'Confirmation token returned by a previous call. On first call, this tool returns a confirmationToken. To confirm, call the tool again with the same arguments plus _confirmationToken set to that value.',
+        };
+      }
+
+      let description = t.def.description;
+      if (isSummarizable) {
+        description += ' Returns summarized data by default. Pass summary=false for full detail.';
+      }
+
+      return {
+        name: t.def.name,
+        description,
+        inputSchema: {
+          type: 'object' as const,
+          properties,
+          ...(t.def.inputSchema.required ? { required: t.def.inputSchema.required } : {}),
+        },
+      };
+    }),
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -186,6 +215,7 @@ export function createWpeServer(config: WpeServerConfig) {
 
     const args = (request.params.arguments ?? {}) as Record<string, unknown>;
     const safety = getToolSafety(toolName, tool.def.annotations.httpMethod);
+    const summaryEnabled = args.summary !== false;
     const startTime = Date.now();
 
     // Tier 3: check for confirmation token
@@ -194,7 +224,11 @@ export function createWpeServer(config: WpeServerConfig) {
 
       if (!token) {
         const confirmationToken = randomBytes(16).toString('hex');
-        pendingTokens.set(confirmationToken, toolName);
+        // Store params (excluding meta-parameters) so we can verify they match on confirmation
+        const boundParams = { ...args };
+        delete boundParams._confirmationToken;
+        delete boundParams.summary;
+        pendingTokens.set(confirmationToken, { toolName, params: boundParams });
 
         const duration_ms = Date.now() - startTime;
         auditLogger.log({
@@ -214,7 +248,8 @@ export function createWpeServer(config: WpeServerConfig) {
               requiresConfirmation: true,
               tier: 3,
               action: safety.confirmationMessage,
-              warning: 'This action may not be reversible. Please confirm to proceed.',
+              warning: 'This action may not be reversible.',
+              howToConfirm: `To proceed, call ${toolName} again with the same arguments plus _confirmationToken set to the value below.`,
               preChecks: safety.preChecks,
               confirmationToken,
             }, null, 2),
@@ -222,9 +257,20 @@ export function createWpeServer(config: WpeServerConfig) {
         };
       }
 
-      const expectedTool = pendingTokens.get(token);
-      if (expectedTool !== toolName) {
+      const pending = pendingTokens.get(token);
+      // Validate token exists, tool matches, and params match
+      const submittedParams = { ...args };
+      delete submittedParams._confirmationToken;
+      delete submittedParams.summary;
+      const paramsMatch = pending !== undefined &&
+        JSON.stringify(submittedParams, Object.keys(submittedParams).sort()) ===
+        JSON.stringify(pending.params, Object.keys(pending.params).sort());
+
+      if (!pending || pending.toolName !== toolName || !paramsMatch) {
         const duration_ms = Date.now() - startTime;
+        const error = !pending || pending.toolName !== toolName
+          ? 'Invalid or expired confirmation token'
+          : 'Parameters changed since confirmation was requested. Please request a new confirmation with the updated parameters.';
         auditLogger.log({
           timestamp: new Date().toISOString(),
           toolName,
@@ -232,12 +278,12 @@ export function createWpeServer(config: WpeServerConfig) {
           params: args,
           confirmed: false,
           result: 'error',
-          error: 'Invalid or expired confirmation token',
+          error,
           duration_ms,
         });
 
         return {
-          content: [{ type: 'text', text: 'Invalid or expired confirmation token. Please request a new confirmation.' }],
+          content: [{ type: 'text', text: `${error} Please request a new confirmation.` }],
           isError: true,
         };
       }
@@ -247,9 +293,11 @@ export function createWpeServer(config: WpeServerConfig) {
 
     const handlerArgs = { ...args };
     delete handlerArgs._confirmationToken;
+    delete handlerArgs.summary;
 
     try {
-      const result = await tool.handler(handlerArgs, client);
+      const rawResult = await tool.handler(handlerArgs, client);
+      const result = applySummarization(toolName, rawResult, summaryEnabled);
       const duration_ms = Date.now() - startTime;
 
       auditLogger.log({

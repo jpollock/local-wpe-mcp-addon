@@ -4,7 +4,16 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Validate that a resource name contains no path traversal sequences.
+ * Rejects names containing '..', '/', or '\'.
+ */
+function isSafeName(name: string): boolean {
+  return !/[/\\]/.test(name) && !name.includes('..');
+}
+
 export function getGuideContent(topic: string): string | null {
+  if (!isSafeName(topic)) return null;
   const filePath = path.join(__dirname, `${topic}.md`);
   if (fs.existsSync(filePath)) {
     return fs.readFileSync(filePath, 'utf-8');
@@ -13,6 +22,7 @@ export function getGuideContent(topic: string): string | null {
 }
 
 export function getWorkflowContent(name: string): string | null {
+  if (!isSafeName(name)) return null;
   const filePath = path.join(__dirname, 'workflows', `${name}.md`);
   if (fs.existsSync(filePath)) {
     return fs.readFileSync(filePath, 'utf-8');
@@ -45,7 +55,9 @@ WP Engine uses a hierarchical model: Account > Site > Install > (Domains, Backup
 4. Navigate to specific objects: domains, backups, SSL, usage
 
 ## Common Workflows
-- "Set up staging" → use \`wpe_setup_staging\` or read \`wpengine://guide/workflows/staging-refresh\`
+- "How many sites?" / "all my sites" → use \`wpe_portfolio_overview\`
+- "Most visited" / "top sites by traffic" / "storage usage" → use \`wpe_portfolio_usage\`
+- "Set up staging" → read \`wpengine://guide/workflows/staging-refresh\` for step-by-step guidance
 - "Go live" / "launch" → use \`wpe_prepare_go_live\` or read \`wpengine://guide/workflows/go-live\`
 - "Account status" / "overview" → use \`wpe_account_overview\`
 - "Health check" / "diagnose" → use \`wpe_diagnose_site\`
@@ -54,16 +66,39 @@ WP Engine uses a hierarchical model: Account > Site > Install > (Domains, Backup
 - "New site" / "new environment" → read \`wpengine://guide/workflows/new-environment\`
 
 ## Composite Tools
-Use composite tools for cross-install views:
+
+For cross-account questions, use portfolio tools instead of querying each account individually:
+- \`wpe_portfolio_overview\` — all accounts, sites, and installs in one view
+- \`wpe_portfolio_usage\` — usage ranked across all accounts
+
+For single-account views:
 - \`wpe_account_overview\` — account summary with limits and usage
 - \`wpe_account_domains\` — all domains across all installs
-- \`wpe_account_backups\` — backup coverage across all installs
 - \`wpe_account_ssl_status\` — SSL certificate health across all installs
 - \`wpe_account_environments\` — topology map of all sites and installs
 - \`wpe_diagnose_site\` — comprehensive health check for one install
 - \`wpe_environment_diff\` — compare two installs side by side
 
 Use individual tools for targeted operations on specific resources.
+
+## Data Strategy
+Most tools return summarized data by default to avoid context overflow.
+Summaries keep rollup metrics, key identifiers, and status indicators
+while stripping daily time-series arrays and verbose field sets.
+
+- Use default summary mode for browsing, comparing, and overviews
+- Pass summary=false only when investigating a specific install's daily trends
+  or when you need complete domain/SSL/backup details
+- For usage across many installs, prefer summary mode — full data can be 50x larger
+- Tools that support summarization note this in their descriptions
+
+## Async Provisioning
+Install creation (\`wpe_create_install\`) and site creation (\`wpe_create_site\`) are async.
+The API returns immediately, but the install may take several minutes to provision.
+
+- After creating an install, poll \`wpe_get_install\` until its status is "active"
+- Do NOT attempt copy, domain, or SSL operations on an install that is still provisioning
+- For staging setup: create install → poll until active → copy from source → verify
 
 ## Safety Rules
 - Read \`wpengine://guide/safety\` before performing Tier 3 (destructive) operations

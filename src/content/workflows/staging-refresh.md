@@ -12,11 +12,13 @@
 
 ## Steps
 
+### If staging install already exists (refresh)
+
 1. **Verify source install**
    - Tool: `wpe_get_install({ install_id: source_id })`
    - Check: Confirm this is the correct production install
 
-2. **Backup the destination** (if it exists)
+2. **Backup the destination**
    - Tool: `wpe_create_backup({ install_id: destination_id, description: "Pre-refresh backup" })`
    - Check: Backup completes before proceeding
 
@@ -33,11 +35,36 @@
    - Tool: `wpe_get_domains({ install_id: destination_id })`
    - Check: Staging domains are correctly configured
 
+### If creating a new staging install
+
+1. **Verify source install**
+   - Tool: `wpe_get_install({ install_id: source_id })`
+   - Check: Confirm this is the correct production install
+
+2. **Create the staging install**
+   - Tool: `wpe_create_install({ name, account_id, site_id, environment: "staging" })`
+   - Check: Note the returned `install_id`
+
+3. **Wait for provisioning**
+   - Tool: `wpe_get_install({ install_id: new_install_id })`
+   - Check: Poll until install status is "active" — provisioning is async and may take several minutes
+   - **Important:** Do NOT proceed until the install is active
+
+4. **Copy production to staging**
+   - Tool: `wpe_copy_install({ source_install_id, destination_install_id: new_install_id })`
+   - Check: Copy operation starts
+
+5. **Verify the copy and domains**
+   - Tool: `wpe_get_install({ install_id: new_install_id })`
+   - Tool: `wpe_get_domains({ install_id: new_install_id })`
+   - Check: Install is accessible, domains are configured
+
 ## Common Issues
 - Copy takes too long: Large sites may take 30+ minutes
 - Staging URLs broken: Update WordPress URLs if domain differs from production
 - Search-replace needed: Database may contain production URLs
 
 ## Related Tools
-- `wpe_setup_staging` — automated staging creation + copy
+- `wpe_create_install` — create a new staging install
+- `wpe_copy_install` — copy data between installs
 - `wpe_environment_diff` — compare production vs staging

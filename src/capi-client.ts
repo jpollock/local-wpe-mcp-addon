@@ -27,7 +27,6 @@ interface PaginatedResponse<T> {
 }
 
 const DEFAULT_BASE_URL = 'https://api.wpengineapi.com/v1';
-const DEFAULT_MAX_CONCURRENCY = 5;
 const DEFAULT_MAX_RETRIES = 3;
 const BASE_RETRY_DELAY_MS = 500;
 
@@ -36,14 +35,10 @@ export class CapiClient {
   private readonly authProvider: AuthProvider;
   private readonly retryOn429: boolean;
   private readonly maxRetries: number;
-  private activeConcurrent = 0;
-  private readonly maxConcurrency: number;
-  private readonly waitQueue: Array<() => void> = [];
 
   constructor(config: CapiClientConfig) {
     this.baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
     this.authProvider = config.authProvider;
-    this.maxConcurrency = config.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY;
     this.retryOn429 = config.retryOn429 ?? true;
     this.maxRetries = config.maxRetries ?? DEFAULT_MAX_RETRIES;
   }
@@ -152,67 +147,43 @@ export class CapiClient {
     options: RequestInit,
     attempt = 0,
   ): Promise<CapiResponse<T>> {
-    await this.acquireConcurrencySlot();
+    const response = await fetch(url, options);
+
+    if (response.status === 429 && this.retryOn429 && attempt < this.maxRetries - 1) {
+      const baseDelay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
+      const delay = baseDelay / 2 + Math.random() * (baseDelay / 2);
+      await sleep(delay);
+      return this.executeWithRetry<T>(url, options, attempt + 1);
+    }
+
+    if (response.status === 204) {
+      return { ok: true, status: 204 };
+    }
+
+    let data: unknown;
     try {
-      const response = await fetch(url, options);
+      data = await response.json();
+    } catch {
+      data = undefined;
+    }
 
-      if (response.status === 429 && this.retryOn429 && attempt < this.maxRetries - 1) {
-        this.releaseConcurrencySlot();
-        const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt) + Math.random() * 100;
-        await sleep(delay);
-        return this.executeWithRetry<T>(url, options, attempt + 1);
-      }
-
-      if (response.status === 204) {
-        return { ok: true, status: 204 };
-      }
-
-      let data: unknown;
-      try {
-        data = await response.json();
-      } catch {
-        data = undefined;
-      }
-
-      if (response.ok) {
-        return {
-          ok: true,
-          status: response.status,
-          data: data as T,
-        };
-      }
-
+    if (response.ok) {
       return {
-        ok: false,
+        ok: true,
         status: response.status,
-        error: {
-          code: response.status,
-          message: formatErrorMessage(response.status, data),
-          details: data,
-        },
+        data: data as T,
       };
-    } finally {
-      this.releaseConcurrencySlot();
     }
-  }
 
-  private async acquireConcurrencySlot(): Promise<void> {
-    if (this.activeConcurrent < this.maxConcurrency) {
-      this.activeConcurrent++;
-      return;
-    }
-    return new Promise<void>((resolve) => {
-      this.waitQueue.push(() => {
-        this.activeConcurrent++;
-        resolve();
-      });
-    });
-  }
-
-  private releaseConcurrencySlot(): void {
-    this.activeConcurrent--;
-    const next = this.waitQueue.shift();
-    if (next) next();
+    return {
+      ok: false,
+      status: response.status,
+      error: {
+        code: response.status,
+        message: formatErrorMessage(response.status, data),
+        details: data,
+      },
+    };
   }
 }
 

@@ -44,5 +44,6 @@
 - DNS issues after recovery: Check domain configuration hasn't changed
 
 ## Related Tools
-- `wpe_account_backups` — audit backup coverage across all installs
-- `wpe_setup_staging` — create staging to test recovery before applying to production
+- `wpe_create_backup` — create a backup of an install
+- `wpe_get_backup` — check backup status
+- `wpe_create_install` — create a staging install to test recovery before applying to production

@@ -48,5 +48,4 @@ When diagnosing issues with a WP Engine install:
 For account-wide health checks:
 - `wpe_account_overview` — quick summary of account status
 - `wpe_account_ssl_status` — find expiring/missing SSL across all installs
-- `wpe_account_backups` — find installs without recent backups
 - `wpe_prepare_go_live` — pre-launch checklist for specific installs

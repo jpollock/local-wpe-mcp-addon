@@ -115,6 +115,27 @@ describe('confirmation flow', () => {
     expect(secondUse.isError).toBe(true);
   });
 
+  it('tier 3 tool rejects token when parameters change', async () => {
+    const { client } = await createConnectedPair();
+
+    // Get token for site-1
+    const promptResult = await client.callTool({
+      name: 'wpe_delete_site',
+      arguments: { site_id: 'site-1' },
+    });
+    const promptText = (promptResult.content as Array<{ type: string; text: string }>)[0].text;
+    const { confirmationToken } = JSON.parse(promptText);
+
+    // Try to use token with site-2 instead
+    const result = await client.callTool({
+      name: 'wpe_delete_site',
+      arguments: { site_id: 'site-2', _confirmationToken: confirmationToken },
+    });
+    expect(result.isError).toBe(true);
+    const text = (result.content as Array<{ type: string; text: string }>)[0].text;
+    expect(text).toContain('Parameters changed');
+  });
+
   it('tier 2 tool executes without confirmation', async () => {
     mockServer.use(http.post(`${BASE_URL}/installs/inst-1/purge_cache`, () =>
       HttpResponse.json({ success: true })));
