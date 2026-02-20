@@ -67,16 +67,16 @@
 
 | Tool | Description | Safety | Category |
 |------|-------------|--------|----------|
-| `wpe_account_backups` | List recent backups across all installs in an account, flagging installs without | Read-only | Composite |
 | `wpe_account_domains` | List all domains across all installs in an account, grouped by install with SSL  | Read-only | Composite |
 | `wpe_account_environments` | Build a topology map of all sites and installs in an account, showing environmen | Read-only | Composite |
 | `wpe_account_overview` | Get a comprehensive overview of a WP Engine account: details, limits, usage summ | Read-only | Composite |
 | `wpe_account_ssl_status` | Check SSL certificate status across all installs in an account, flagging expirin | Read-only | Composite |
 | `wpe_account_usage` | Get account usage metrics with insights and trends. | Read-only | Composite |
-| `wpe_diagnose_site` | Run a comprehensive health check on a single install: usage, domains, SSL, and b | Read-only | Composite |
+| `wpe_diagnose_site` | Run a comprehensive health check on a single install: usage, domains, and SSL. | Read-only | Composite |
 | `wpe_environment_diff` | Compare two installs side-by-side: configuration, domains, and usage differences | Read-only | Composite |
-| `wpe_prepare_go_live` | Run a pre-launch checklist for an install: verify domains, SSL certificates, and | Read-only | Composite |
-| `wpe_setup_staging` | Create a staging environment by creating a new install and copying from a source | Destructive | Composite |
+| `wpe_portfolio_overview` | Get a consolidated view of all accounts, sites, and installs the user has access | Read-only | Composite |
+| `wpe_portfolio_usage` | Get usage metrics across all accounts, ranked by visits. Use for cross-account q | Read-only | Composite |
+| `wpe_prepare_go_live` | Run a pre-launch checklist for an install: verify domains and SSL certificates. | Read-only | Composite |
 
 ## Detailed Reference
 
@@ -840,19 +840,6 @@ Get the current user
 
 ### Composite Tools
 
-### `wpe_account_backups`
-
-List recent backups across all installs in an account, flagging installs without recent backups.
-
-- **Safety:** Read-only
-- **Type:** Composite tool
-
-**Parameters:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `account_id` | string | Yes | The account ID |
-
 ### `wpe_account_domains`
 
 List all domains across all installs in an account, grouped by install with SSL status.
@@ -920,7 +907,7 @@ Get account usage metrics with insights and trends.
 
 ### `wpe_diagnose_site`
 
-Run a comprehensive health check on a single install: usage, domains, SSL, and backups.
+Run a comprehensive health check on a single install: usage, domains, and SSL.
 
 - **Safety:** Read-only
 - **Type:** Composite tool
@@ -945,9 +932,23 @@ Compare two installs side-by-side: configuration, domains, and usage differences
 | `install_id_a` | string | Yes | First install ID |
 | `install_id_b` | string | Yes | Second install ID |
 
+### `wpe_portfolio_overview`
+
+Get a consolidated view of all accounts, sites, and installs the user has access to. Use for cross-account questions like "how many sites do I have?" or "what PHP versions am I running?"
+
+- **Safety:** Read-only
+- **Type:** Composite tool
+
+### `wpe_portfolio_usage`
+
+Get usage metrics across all accounts, ranked by visits. Use for cross-account questions like "what are my most visited sites?" or "which sites use the most storage?"
+
+- **Safety:** Read-only
+- **Type:** Composite tool
+
 ### `wpe_prepare_go_live`
 
-Run a pre-launch checklist for an install: verify domains, SSL certificates, and recent backups.
+Run a pre-launch checklist for an install: verify domains and SSL certificates.
 
 - **Safety:** Read-only
 - **Type:** Composite tool
@@ -957,19 +958,3 @@ Run a pre-launch checklist for an install: verify domains, SSL certificates, and
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `install_id` | string | Yes | The install ID to check |
-
-### `wpe_setup_staging`
-
-Create a staging environment by creating a new install and copying from a source install. Requires confirmation (Tier 3).
-
-- **Safety:** Destructive
-- **Type:** Composite tool
-
-**Parameters:**
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `name` | string | Yes | Name for the new staging install |
-| `site_id` | string | Yes | The site ID to create the staging install under |
-| `account_id` | string | Yes | The account ID |
-| `source_install_id` | string | Yes | The install ID to copy from |
