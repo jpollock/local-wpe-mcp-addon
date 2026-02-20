@@ -292,3 +292,91 @@ Decisions made during requirements discussion, 2026-02-19.
 - Each phase gate is: "all tests pass"
 - Test plan is a reviewable artifact alongside the implementation spec
 - Higher upfront effort, but each phase ships with verified quality
+
+---
+
+## ADR-014: Summarization Middleware
+
+**Status:** Accepted
+
+**Context:** During real-world testing with Claude Desktop, accounts with 100+ installs produced tool results exceeding 1MB. AI clients have tool result size limits, and large responses consume excessive context window, degrading agent reasoning quality.
+
+**Decision:** Implement server-side summarization middleware. Tools that return large responses register a summarizer function. The server applies summarization after the handler returns, controlled by a `summary` parameter (default: `true`).
+
+**Rationale:**
+- Server-side summarization is more reliable than asking the AI to request less data
+- Default `true` prevents context overflow for the common case (browsing, overviews)
+- Opt-out via `summary=false` preserves access to full data when investigating specific installs
+- Summarizers strip daily time-series arrays and verbose fields while keeping rollups, identifiers, and status indicators
+
+**Consequences:**
+- 11 summarizer functions in `src/summarize.ts` — 5 for generated tools, 6 for composites
+- Every tool with a summarizer gets `summary` added to its input schema automatically
+- Tool descriptions note when summarization is available
+- New tools producing large responses should register a summarizer
+
+---
+
+## ADR-015: Portfolio Tools (Cross-Account Aggregation)
+
+**Status:** Accepted
+
+**Context:** The original requirements scoped composite tools to single accounts, with multi-account aggregation listed as "out of scope." During testing, users with multiple WP Engine accounts found that AI agents give up or produce incomplete answers after 2-3 sequential per-account calls.
+
+**Decision:** Add `wpe_portfolio_overview` and `wpe_portfolio_usage` tools that fan out across all accessible accounts in a single call.
+
+**Rationale:**
+- "How many sites do I have?" is the most common first question, and users expect it to cover all accounts
+- Sequential per-account queries don't scale — agents lose track of intermediate results
+- Fan-out across accounts reuses the same concurrency and rate-limit infrastructure as per-account fan-out
+- Portfolio tools are read-only (Tier 1) with no safety concerns
+
+**Consequences:**
+- Two new composite tools added to `src/tools/composite/`
+- INSTRUCTIONS updated to route cross-account questions to portfolio tools
+- Summarizers registered for both tools to handle large multi-account responses
+- "Out of scope" section in requirements updated
+
+---
+
+## ADR-016: Removing Backup Listing Composite
+
+**Status:** Accepted
+
+**Context:** The original FR-2 specified `wpe_account_backups` to list backup recency per environment and flag installs without recent backups. The composite was implemented against a presumed `GET /installs/{id}/backups` endpoint.
+
+**Decision:** Remove `wpe_account_backups`. The CAPI swagger spec does not include a list-backups-by-install endpoint. Individual backup operations exist (create backup, get backup status by ID) but there is no way to enumerate backups for an install.
+
+**Rationale:**
+- The endpoint doesn't exist — the tool would always return errors
+- Backup checks were also removed from `wpe_diagnose_site` and `wpe_prepare_go_live` for the same reason
+- If CAPI adds a list-backups endpoint in the future, the composite can be re-implemented
+
+**Consequences:**
+- `wpe_account_backups` source file deleted
+- Backup-related checks removed from `wpe_diagnose_site` and `wpe_prepare_go_live`
+- 8 composite tools instead of 10 (before portfolio tools brought it back to 10)
+- No backup recency auditing capability
+
+---
+
+## ADR-017: Removing Setup-Staging Composite
+
+**Status:** Accepted
+
+**Context:** The original FR-2 specified `wpe_setup_staging` to create a staging environment by chaining: create install → copy from source → list domains. The composite was implemented but discovered to be unreliable.
+
+**Decision:** Remove `wpe_setup_staging` as a composite tool. Preserve the `setup-staging` MCP prompt but update its template to guide the AI through individual tool calls with polling.
+
+**Rationale:**
+- Install creation is async — the API returns immediately but provisioning takes several minutes
+- The composite tried to chain create → copy immediately, but the new install isn't ready for copy operations
+- An MCP tool call can't reasonably block for minutes waiting for provisioning
+- The AI agent can handle the multi-step workflow with guidance: create → poll until active → copy → verify
+- The `setup-staging` prompt template encodes this workflow as step-by-step instructions
+
+**Consequences:**
+- `wpe_setup_staging` source file deleted
+- `setup-staging` prompt template updated to reference individual tools
+- INSTRUCTIONS updated to route "set up staging" to the workflow guide
+- Async provisioning guidance added to INSTRUCTIONS for all create operations

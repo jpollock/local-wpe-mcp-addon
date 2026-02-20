@@ -17,16 +17,16 @@ standalone with env var auth for testing and CI.
 
 | Phase | Status | Gate |
 |-------|--------|------|
-| 1. Foundation | NOT STARTED | `npm run test:unit` passes, `wpe_get_accounts` works via stdio |
-| 2. Generated Tool Tests | NOT STARTED | Full unit + component test suite green |
-| 3. Safety & Audit | NOT STARTED | Tier enforcement + audit log tests green |
-| 4. Composite Tools | NOT STARTED | Composite tool tests green with mocked CAPI |
-| 5. Knowledge Layer | NOT STARTED | Resources resolve, prompts available, content authored |
-| 6. Local Addon Integration | NOT STARTED | Addon loads in Local, OAuth works, both transports |
-| 7. Polish | NOT STARTED | End-to-end walkthrough succeeds |
+| 1. Foundation | DONE | `npm run test:unit` passes, `wpe_get_accounts` works via stdio |
+| 2. Generated Tool Tests | DONE | Full unit + component test suite green |
+| 3. Safety & Audit | DONE | Tier enforcement + audit log tests green |
+| 4. Composite Tools | DONE | Composite tool tests green with mocked CAPI |
+| 5. Knowledge Layer | DONE | Resources resolve, prompts available, content authored |
+| 6. Local Addon Integration | DONE | Addon loads in Local, OAuth works, both transports |
+| 7. Polish | DONE | User docs, tool reference, drift detection, packaging |
 
-Update this table as phases complete. Mark IN PROGRESS when starting,
-DONE when gate criteria met.
+**Current state:** 60 tools (50 generated + 10 composite), 251 tests, 11 summarizers, 6 prompts.
+See `docs/deviations.md` for differences between original spec and implementation.
 
 ## Key Decisions (Summary)
 
@@ -48,22 +48,34 @@ Full ADRs in `docs/decisions.md`. Quick reference:
 
 ```
 ├── CLAUDE.md                          # THIS FILE — session bootstrap
+├── README.md                          # Project README
+├── CHANGELOG.md                       # Release changelog
 ├── data/
 │   └── swagger.json                   # Vendored CAPI swagger spec
 ├── docs/                              # Project documentation
 │   ├── requirements.md                # Functional + non-functional requirements
-│   ├── decisions.md                   # Architecture Decision Records
+│   ├── decisions.md                   # Architecture Decision Records (ADR-001 to ADR-017)
+│   ├── deviations.md                  # Deviations from original spec with rationale
 │   ├── api-surface.md                 # Complete endpoint catalog + tool mappings
 │   ├── knowledge-architecture.md      # Knowledge layer design
 │   ├── engineering-plan.md            # Testing, security, performance, etc.
 │   ├── implementation-spec.md         # Detailed phase specs (THE BUILD PLAN)
-│   └── test-plan.md                   # TDD test descriptions by phase
+│   ├── test-plan.md                   # TDD test descriptions by phase
+│   ├── reference/
+│   │   └── tools.md                   # Auto-generated tool reference
+│   └── user-guide/                    # End-user documentation
+│       ├── getting-started.md
+│       ├── claude-desktop-setup.md
+│       ├── claude-code-setup.md
+│       ├── standalone-setup.md
+│       └── troubleshooting.md
 ├── src/
 │   ├── server.ts                      # MCP server setup + INSTRUCTIONS
 │   ├── capi-client.ts                 # HTTP client for WP Engine API
 │   ├── auth.ts                        # Auth provider (OAuth + env var)
 │   ├── safety.ts                      # Tier classification + confirmation
 │   ├── audit.ts                       # Structured audit logging
+│   ├── summarize.ts                   # Summarization middleware (11 summarizers)
 │   ├── pagination.ts                  # Auto-pagination helper
 │   ├── tools/
 │   │   ├── generated/                 # AUTO-GENERATED — DO NOT EDIT
@@ -81,14 +93,14 @@ Full ADRs in `docs/decisions.md`. Quick reference:
 │   │   └── composite/                 # Hand-written composite tools
 │   │       ├── account-overview.ts
 │   │       ├── account-domains.ts
-│   │       ├── account-backups.ts
 │   │       ├── account-ssl-status.ts
 │   │       ├── account-environments.ts
 │   │       ├── account-usage.ts
 │   │       ├── diagnose-site.ts
-│   │       ├── setup-staging.ts
 │   │       ├── prepare-go-live.ts
-│   │       └── environment-diff.ts
+│   │       ├── environment-diff.ts
+│   │       ├── portfolio-overview.ts
+│   │       └── portfolio-usage.ts
 │   ├── resources/
 │   │   ├── entity-browser.ts          # Live data resources
 │   │   └── knowledge.ts              # Static content resources
@@ -111,11 +123,13 @@ Full ADRs in `docs/decisions.md`. Quick reference:
 │       └── index.tsx                  # Status UI (minimal)
 ├── codegen/
 │   ├── generate.ts                    # Swagger → MCP tool codegen
+│   ├── generate-reference.ts         # Tool reference doc generator
 │   ├── drift-check.ts                # Compare vendored vs. live swagger
 │   └── templates/
 │       └── tool-template.ts.ejs       # Code generation template
 ├── bin/
-│   └── mcp-stdio.ts                   # Standalone stdio entry point
+│   ├── mcp-stdio.ts                   # Standalone stdio entry point
+│   └── mcp-http.ts                    # Standalone HTTP/SSE entry point
 ├── test/
 │   ├── unit/
 │   ├── component/

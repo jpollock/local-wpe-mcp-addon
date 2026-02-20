@@ -48,13 +48,15 @@ Beyond 1:1 mapping, provide tools that chain multiple API calls and encode domai
 | `wpe_account_overview` | Account details + plan limits + usage summary + site/install counts | No — account-level APIs exist |
 | `wpe_account_usage` | Bandwidth, visits, storage across all installs with insights | No — account-level API exists |
 | `wpe_account_domains` | All domains across all installs, grouped by environment, SSL status included | Yes — per install |
-| `wpe_account_backups` | Backup recency per environment, flag installs without recent backups | Yes — per install |
+| ~~`wpe_account_backups`~~ | ~~Backup recency per environment, flag installs without recent backups~~ | ~~Yes — per install~~ | **Removed** — CAPI has no list-backups endpoint. See `docs/deviations.md` D-1. |
 | `wpe_account_ssl_status` | Cert status per domain, flag expiring or missing SSL | Yes — per install |
 | `wpe_account_environments` | Full environment topology — which sites have staging, PHP versions, etc. | Minimal |
 | `wpe_diagnose_site` | Health snapshot: usage + domains + SSL + cache + backups | Yes — multiple per install |
-| `wpe_setup_staging` | Create staging from production: create_install + install_copy + list domains | No — sequential mutations |
+| ~~`wpe_setup_staging`~~ | ~~Create staging from production: create_install + install_copy + list domains~~ | ~~No — sequential mutations~~ | **Removed** — Install provisioning is async (minutes); composite can't wait. See `docs/deviations.md` D-2. |
 | `wpe_prepare_go_live` | Pre-launch checklist: domains + SSL + DNS + backups verified | Yes — multiple per install |
 | `wpe_environment_diff` | Side-by-side comparison of two installs | Parallel — two installs |
+| `wpe_portfolio_overview` | All accounts, sites, and installs in one view | Yes — per account | **Added** — Cross-account queries essential for multi-account users. See `docs/deviations.md` D-5. |
+| `wpe_portfolio_usage` | Usage ranked across all accounts | Yes — per account | **Added** — Same rationale as portfolio_overview. |
 
 **Fan-out pattern requirements:**
 - Respect CAPI rate limits (handle 429 responses)
@@ -233,9 +235,24 @@ Standalone mode is the primary development and testing target. Local addon wraps
 
 ---
 
+### FR-10: Summarization Layer
+
+Tools that return large responses register a summarizer in `src/summarize.ts`. The server applies summarization after the handler returns, controlled by a `summary` parameter (default: `true`).
+
+**Motivation:** Context overflow in AI clients with accounts having 100+ installs. Raw API responses for usage, installs, and domains can exceed 1MB.
+
+**Behavior:**
+- `summary=true` (default): Strips daily time-series arrays and verbose fields, keeps rollups and key identifiers
+- `summary=false`: Returns full API response
+- Tools without a registered summarizer are unaffected
+
+**Current summarizers:** 11 (5 for generated tools, 6 for composite tools). See `docs/deviations.md` D-6.
+
+---
+
 ## Out of Scope (for initial version)
 
 - WordPress application-level operations (WP-CLI, plugin management) — handled by existing `local-addon-mcp-server`
 - Push/pull sync operations — handled by existing Local addon
 - Site creation wizard UI — this is a headless MCP server
-- Multi-account aggregation — composite tools scope to single account initially (designed to relax in future)
+- ~~Multi-account aggregation — composite tools scope to single account initially~~ **Now in scope:** `wpe_portfolio_overview` and `wpe_portfolio_usage` provide cross-account views. See `docs/deviations.md` D-5.
