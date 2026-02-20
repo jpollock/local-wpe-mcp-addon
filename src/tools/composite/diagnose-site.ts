@@ -2,7 +2,7 @@ import type { CapiClient } from '../../capi-client.js';
 
 export const wpeDiagnoseSiteDef = {
   name: 'wpe_diagnose_site',
-  description: 'Run a comprehensive health check on a single install: usage, domains, SSL, and backups.',
+  description: 'Run a comprehensive health check on a single install: usage, domains, and SSL.',
   inputSchema: {
     type: 'object' as const,
     properties: {
@@ -24,12 +24,11 @@ export async function wpeDiagnoseSiteHandler(
 ): Promise<unknown> {
   const installId = params.install_id as string;
 
-  const [install, usage, domains, ssl, backups] = await Promise.all([
+  const [install, usage, domains, ssl] = await Promise.all([
     client.get(`/installs/${installId}`),
     client.get(`/installs/${installId}/usage`),
     client.get(`/installs/${installId}/domains`),
     client.get(`/installs/${installId}/ssl_certificates`),
-    client.get(`/installs/${installId}/backups`),
   ]);
 
   if (!install.ok) {
@@ -37,18 +36,6 @@ export async function wpeDiagnoseSiteHandler(
   }
 
   const warnings: string[] = [];
-
-  // Check backups
-  const backupData = backups.ok ? backups.data as { results?: Array<{ created_at: string }> } : null;
-  const latestBackup = backupData?.results?.[0];
-  if (!latestBackup) {
-    warnings.push('No backups found for this install');
-  } else {
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    if (latestBackup.created_at < oneDayAgo) {
-      warnings.push('No backup in the last 24 hours');
-    }
-  }
 
   // Check SSL
   const sslData = ssl.ok ? ssl.data as { certificates?: Array<{ expires_at?: string }> } : null;
@@ -69,7 +56,6 @@ export async function wpeDiagnoseSiteHandler(
     usage: usage.ok ? usage.data : { error: usage.error },
     domains: domains.ok ? domains.data : { error: domains.error },
     ssl: ssl.ok ? ssl.data : { error: ssl.error },
-    backups: backups.ok ? backups.data : { error: backups.error },
     health: {
       warnings,
       status: warnings.length === 0 ? 'healthy' : 'attention_needed',

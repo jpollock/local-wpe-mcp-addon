@@ -2,7 +2,7 @@ import type { CapiClient } from '../../capi-client.js';
 
 export const wpePrepareGoLiveDef = {
   name: 'wpe_prepare_go_live',
-  description: 'Run a pre-launch checklist for an install: verify domains, SSL certificates, and recent backups.',
+  description: 'Run a pre-launch checklist for an install: verify domains and SSL certificates.',
   inputSchema: {
     type: 'object' as const,
     properties: {
@@ -30,11 +30,10 @@ export async function wpePrepareGoLiveHandler(
 ): Promise<unknown> {
   const installId = params.install_id as string;
 
-  const [install, domains, ssl, backups] = await Promise.all([
+  const [install, domains, ssl] = await Promise.all([
     client.get(`/installs/${installId}`),
     client.get(`/installs/${installId}/domains`),
     client.get(`/installs/${installId}/ssl_certificates`),
-    client.get(`/installs/${installId}/backups`),
   ]);
 
   if (!install.ok) {
@@ -76,21 +75,6 @@ export async function wpePrepareGoLiveHandler(
       });
     } else {
       checks.push({ check: 'ssl_configured', status: 'pass', detail: `${certs.length} valid SSL certificate(s)` });
-    }
-  }
-
-  // Check: recent backup
-  const backupData = backups.ok ? backups.data as { results?: Array<{ created_at: string }> } : null;
-  const backupList = backupData?.results ?? [];
-  if (backupList.length === 0) {
-    checks.push({ check: 'recent_backup', status: 'fail', detail: 'No backups found' });
-  } else {
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const latestBackup = backupList[0]!;
-    if (latestBackup.created_at >= oneDayAgo) {
-      checks.push({ check: 'recent_backup', status: 'pass', detail: `Latest backup: ${latestBackup.created_at}` });
-    } else {
-      checks.push({ check: 'recent_backup', status: 'warning', detail: `Latest backup is over 24 hours old: ${latestBackup.created_at}` });
     }
   }
 

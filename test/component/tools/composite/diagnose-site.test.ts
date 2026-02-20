@@ -20,7 +20,6 @@ function createClient() {
 
 describe('wpe_diagnose_site', () => {
   it('returns all health dimensions when healthy', async () => {
-    const recentDate = new Date().toISOString();
     const validExpiry = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
 
     mockServer.use(
@@ -32,8 +31,6 @@ describe('wpe_diagnose_site', () => {
         HttpResponse.json({ results: [{ id: 'd1', name: 'example.com' }] })),
       http.get(`${BASE_URL}/installs/inst-1/ssl_certificates`, () =>
         HttpResponse.json({ certificates: [{ type: 'lets_encrypt', expires_at: validExpiry }] })),
-      http.get(`${BASE_URL}/installs/inst-1/backups`, () =>
-        HttpResponse.json({ results: [{ id: 'b1', created_at: recentDate }] })),
     );
 
     const result = await wpeDiagnoseSiteHandler({ install_id: 'inst-1' }, createClient()) as Record<string, unknown>;
@@ -41,14 +38,12 @@ describe('wpe_diagnose_site', () => {
     expect(result.usage).toBeDefined();
     expect(result.domains).toBeDefined();
     expect(result.ssl).toBeDefined();
-    expect(result.backups).toBeDefined();
     const health = result.health as { status: string; warnings: string[] };
     expect(health.status).toBe('healthy');
     expect(health.warnings).toHaveLength(0);
   });
 
-  it('flags anomalies: missing backup, expiring SSL', async () => {
-    const oldBackup = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  it('flags expiring SSL', async () => {
     const expiringCert = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
     mockServer.use(
@@ -60,14 +55,13 @@ describe('wpe_diagnose_site', () => {
         HttpResponse.json({ results: [] })),
       http.get(`${BASE_URL}/installs/inst-1/ssl_certificates`, () =>
         HttpResponse.json({ certificates: [{ type: 'lets_encrypt', expires_at: expiringCert }] })),
-      http.get(`${BASE_URL}/installs/inst-1/backups`, () =>
-        HttpResponse.json({ results: [{ id: 'b1', created_at: oldBackup }] })),
     );
 
     const result = await wpeDiagnoseSiteHandler({ install_id: 'inst-1' }, createClient()) as Record<string, unknown>;
     const health = result.health as { status: string; warnings: string[] };
     expect(health.status).toBe('attention_needed');
-    expect(health.warnings.length).toBeGreaterThanOrEqual(2);
+    expect(health.warnings.length).toBeGreaterThanOrEqual(1);
+    expect(health.warnings.some((w) => w.includes('SSL'))).toBe(true);
   });
 
   it('handles install not found', async () => {
@@ -79,8 +73,6 @@ describe('wpe_diagnose_site', () => {
       http.get(`${BASE_URL}/installs/bad/domains`, () =>
         HttpResponse.json({ error: 'Not found' }, { status: 404 })),
       http.get(`${BASE_URL}/installs/bad/ssl_certificates`, () =>
-        HttpResponse.json({ error: 'Not found' }, { status: 404 })),
-      http.get(`${BASE_URL}/installs/bad/backups`, () =>
         HttpResponse.json({ error: 'Not found' }, { status: 404 })),
     );
 
