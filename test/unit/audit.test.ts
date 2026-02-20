@@ -114,6 +114,25 @@ describe('audit logger', () => {
     expect(entries[0].params.visible).toBe('ok');
   });
 
+  it('redacts nested sensitive fields recursively', () => {
+    const logger = createAuditLogger();
+    logger.log({
+      timestamp: new Date().toISOString(),
+      toolName: 'wpe_test',
+      tier: 2,
+      params: { user: { password: 'secret', name: 'alice' }, items: [{ api_key: 'k1' }] },
+      confirmed: null,
+      result: 'success',
+      duration_ms: 10,
+    });
+    const entries = logger.getEntries();
+    const nested = entries[0].params.user as Record<string, unknown>;
+    expect(nested.password).toBe('[REDACTED]');
+    expect(nested.name).toBe('alice');
+    const arr = entries[0].params.items as Array<Record<string, unknown>>;
+    expect(arr[0].api_key).toBe('[REDACTED]');
+  });
+
   it('includes duration_ms', () => {
     const logger = createAuditLogger();
     logger.log({
@@ -158,6 +177,51 @@ describe('audit logger', () => {
     const entry2 = JSON.parse(lines[1]) as AuditEntry;
     expect(entry1.toolName).toBe('wpe_get_accounts');
     expect(entry2.toolName).toBe('wpe_delete_site');
+  });
+
+  it('clears in-memory entries after flush', async () => {
+    const logPath = path.join(tmpDir, 'audit.log');
+    const logger = createAuditLogger(logPath);
+    logger.log({
+      timestamp: new Date().toISOString(),
+      toolName: 'wpe_get_accounts',
+      tier: 1,
+      params: {},
+      confirmed: null,
+      result: 'success',
+      duration_ms: 50,
+    });
+    expect(logger.getEntries()).toHaveLength(1);
+    await logger.flush();
+    expect(logger.getEntries()).toHaveLength(0);
+  });
+
+  it('appends to existing log file on subsequent flushes', async () => {
+    const logPath = path.join(tmpDir, 'audit.log');
+    const logger = createAuditLogger(logPath);
+    logger.log({
+      timestamp: '2024-01-01T00:00:00.000Z',
+      toolName: 'wpe_get_accounts',
+      tier: 1,
+      params: {},
+      confirmed: null,
+      result: 'success',
+      duration_ms: 50,
+    });
+    await logger.flush();
+    logger.log({
+      timestamp: '2024-01-01T00:00:01.000Z',
+      toolName: 'wpe_delete_site',
+      tier: 3,
+      params: { site_id: 'site-1' },
+      confirmed: true,
+      result: 'success',
+      duration_ms: 200,
+    });
+    await logger.flush();
+    const content = fs.readFileSync(logPath, 'utf-8');
+    const lines = content.trim().split('\n');
+    expect(lines).toHaveLength(2);
   });
 
   it('getEntries returns all logged entries', () => {

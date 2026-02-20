@@ -21,15 +21,24 @@ export interface AuditLogger {
 
 const SENSITIVE_PATTERNS = ['password', 'token', 'secret', 'key'];
 
+function redactValue(key: string, value: unknown): unknown {
+  const lower = key.toLowerCase();
+  if (SENSITIVE_PATTERNS.some((p) => lower.includes(p))) {
+    return '[REDACTED]';
+  }
+  if (Array.isArray(value)) {
+    return value.map((item, i) => redactValue(String(i), item));
+  }
+  if (value !== null && typeof value === 'object') {
+    return redactParams(value as Record<string, unknown>);
+  }
+  return value;
+}
+
 function redactParams(params: Record<string, unknown>): Record<string, unknown> {
   const redacted: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(params)) {
-    const lower = k.toLowerCase();
-    if (SENSITIVE_PATTERNS.some((p) => lower.includes(p))) {
-      redacted[k] = '[REDACTED]';
-    } else {
-      redacted[k] = v;
-    }
+    redacted[k] = redactValue(k, v);
   }
   return redacted;
 }
@@ -51,13 +60,14 @@ export function createAuditLogger(logPath?: string): AuditLogger {
     },
 
     async flush(): Promise<void> {
-      if (!logPath) return;
+      if (!logPath || entries.length === 0) return;
       const dir = path.dirname(logPath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
       const lines = entries.map((e) => JSON.stringify(e)).join('\n') + '\n';
-      fs.writeFileSync(logPath, lines, 'utf-8');
+      fs.appendFileSync(logPath, lines, { encoding: 'utf-8', mode: 0o600 });
+      entries.length = 0;
     },
   };
 }

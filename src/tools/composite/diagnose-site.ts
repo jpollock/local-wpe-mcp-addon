@@ -1,4 +1,5 @@
 import type { CapiClient } from '../../capi-client.js';
+import { findExpiringSslCerts } from '../../ssl-utils.js';
 
 export const wpeDiagnoseSiteDef = {
   name: 'wpe_diagnose_site',
@@ -42,10 +43,7 @@ export async function wpeDiagnoseSiteHandler(
   if (!sslData?.certificates?.length) {
     warnings.push('No SSL certificates configured');
   } else {
-    const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    const expiring = sslData.certificates.filter(
-      (c) => c.expires_at && c.expires_at < thirtyDaysFromNow,
-    );
+    const expiring = findExpiringSslCerts(sslData.certificates);
     if (expiring.length > 0) {
       warnings.push(`${expiring.length} SSL certificate(s) expiring within 30 days`);
     }

@@ -77,10 +77,20 @@ async function findAvailablePort(start: number, end: number, host: string): Prom
   throw new Error(`No available port found in range ${start}-${end}`);
 }
 
+const MAX_BODY_BYTES = 1024 * 1024; // 1 MB
+
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    let totalBytes = 0;
+    req.on('data', (chunk: Buffer) => {
+      totalBytes += chunk.length;
+      if (totalBytes > MAX_BODY_BYTES) {
+        req.destroy(new Error('Request body too large'));
+        return;
+      }
+      chunks.push(chunk);
+    });
     req.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
     req.on('error', reject);
   });
@@ -206,7 +216,7 @@ export async function startHttpServer(
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(connectionInfoPath, JSON.stringify(connectionInfo, null, 2));
+    fs.writeFileSync(connectionInfoPath, JSON.stringify(connectionInfo, null, 2), { mode: 0o600 });
   }
 
   return {

@@ -1,4 +1,4 @@
-import type { CapiClient } from '../../capi-client.js';
+import type { ToolRegistration } from '../generated/index.js';
 
 import { wpeAccountOverviewDef, wpeAccountOverviewHandler } from './account-overview.js';
 import { wpeAccountUsageDef, wpeAccountUsageHandler } from './account-usage.js';
@@ -11,17 +11,7 @@ import { wpeEnvironmentDiffDef, wpeEnvironmentDiffHandler } from './environment-
 import { wpePortfolioOverviewDef, wpePortfolioOverviewHandler } from './portfolio-overview.js';
 import { wpePortfolioUsageDef, wpePortfolioUsageHandler } from './portfolio-usage.js';
 
-export interface CompositeToolRegistration {
-  def: {
-    name: string;
-    description: string;
-    inputSchema: { type: 'object'; properties: Record<string, unknown>; required?: string[] };
-    annotations: { safetyTier: 1 | 2 | 3; httpMethod: string; apiPath: string; tag: string };
-  };
-  handler: (params: Record<string, unknown>, client: CapiClient) => Promise<unknown>;
-}
-
-export const allCompositeTools: CompositeToolRegistration[] = [
+export const allCompositeTools: ToolRegistration[] = [
   { def: wpeAccountOverviewDef, handler: wpeAccountOverviewHandler },
   { def: wpeAccountUsageDef, handler: wpeAccountUsageHandler },
   { def: wpeAccountDomainsDef, handler: wpeAccountDomainsHandler },

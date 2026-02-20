@@ -1,5 +1,6 @@
 import type { CapiClient } from '../../capi-client.js';
 import { fanOut } from '../../fan-out.js';
+import { findExpiringSslCerts } from '../../ssl-utils.js';
 
 export const wpeAccountSslStatusDef = {
   name: 'wpe_account_ssl_status',
@@ -47,17 +48,13 @@ export async function wpeAccountSslStatusHandler(
     return { installs: [], message: 'No installs found for this account.' };
   }
 
-  const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
   const results = await fanOut(installs, async (install) => {
     const sslResp = await client.get<{ certificates: SslCertificate[] }>(
       `/installs/${install.id}/ssl_certificates`,
     );
 
     const certs = sslResp.ok ? (sslResp.data?.certificates ?? []) : [];
-    const expiringSoon = certs.filter(
-      (c) => c.expires_at && c.expires_at < thirtyDaysFromNow,
-    );
+    const expiringSoon = findExpiringSslCerts(certs);
 
     return {
       install_id: install.id,

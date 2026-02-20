@@ -142,8 +142,9 @@ export function createWpeServer(config: WpeServerConfig) {
   const client = new CapiClient({ authProvider });
   const auditLogger = createAuditLogger(config.auditLogPath);
 
-  // Pending confirmation tokens: token → { toolName, params } (single-use)
-  const pendingTokens = new Map<string, { toolName: string; params: Record<string, unknown> }>();
+  // Pending confirmation tokens: token → { toolName, params, createdAt } (single-use, 5-min TTL)
+  const TOKEN_TTL_MS = 5 * 60 * 1000;
+  const pendingTokens = new Map<string, { toolName: string; params: Record<string, unknown>; createdAt: number }>();
 
   const server = new Server(serverInfo, {
     capabilities: {
@@ -228,7 +229,7 @@ export function createWpeServer(config: WpeServerConfig) {
         const boundParams = { ...args };
         delete boundParams._confirmationToken;
         delete boundParams.summary;
-        pendingTokens.set(confirmationToken, { toolName, params: boundParams });
+        pendingTokens.set(confirmationToken, { toolName, params: boundParams, createdAt: Date.now() });
 
         const duration_ms = Date.now() - startTime;
         auditLogger.log({
@@ -257,20 +258,29 @@ export function createWpeServer(config: WpeServerConfig) {
         };
       }
 
+      // Purge expired tokens on each confirmation attempt
+      const now = Date.now();
+      for (const [k, v] of pendingTokens) {
+        if (now - v.createdAt > TOKEN_TTL_MS) pendingTokens.delete(k);
+      }
+
       const pending = pendingTokens.get(token);
-      // Validate token exists, tool matches, and params match
+      // Validate token exists, not expired, tool matches, and params match
       const submittedParams = { ...args };
       delete submittedParams._confirmationToken;
       delete submittedParams.summary;
-      const paramsMatch = pending !== undefined &&
+      const isExpired = pending !== undefined && now - pending.createdAt > TOKEN_TTL_MS;
+      const paramsMatch = pending !== undefined && !isExpired &&
         JSON.stringify(submittedParams, Object.keys(submittedParams).sort()) ===
         JSON.stringify(pending.params, Object.keys(pending.params).sort());
 
-      if (!pending || pending.toolName !== toolName || !paramsMatch) {
+      if (!pending || isExpired || pending.toolName !== toolName || !paramsMatch) {
         const duration_ms = Date.now() - startTime;
-        const error = !pending || pending.toolName !== toolName
-          ? 'Invalid or expired confirmation token'
-          : 'Parameters changed since confirmation was requested. Please request a new confirmation with the updated parameters.';
+        const error = isExpired
+          ? 'Confirmation token expired (5-minute TTL). Please request a new confirmation.'
+          : !pending || pending.toolName !== toolName
+            ? 'Invalid or expired confirmation token'
+            : 'Parameters changed since confirmation was requested. Please request a new confirmation with the updated parameters.';
         auditLogger.log({
           timestamp: new Date().toISOString(),
           toolName,

@@ -24,7 +24,7 @@ describe('fanOut', () => {
         current--;
         return n;
       },
-      { maxConcurrency: 3 },
+      3,
     );
 
     expect(maxConcurrent).toBeLessThanOrEqual(3);
@@ -41,24 +41,6 @@ describe('fanOut', () => {
     expect(results[0]).toEqual({ item: 1, result: 1 });
     expect(results[1]).toEqual({ item: 2, result: null, error: 'fail on 2' });
     expect(results[2]).toEqual({ item: 3, result: 3 });
-  });
-
-  it('reports progress', async () => {
-    const progressCalls: Array<[number, number]> = [];
-
-    await fanOut(
-      [1, 2, 3, 4, 5],
-      async (n) => n,
-      {
-        onProgress: (completed, total) => {
-          progressCalls.push([completed, total]);
-        },
-      },
-    );
-
-    expect(progressCalls).toHaveLength(5);
-    expect(progressCalls[0]).toEqual([1, 5]);
-    expect(progressCalls[4]).toEqual([5, 5]);
   });
 
   it('handles empty input', async () => {

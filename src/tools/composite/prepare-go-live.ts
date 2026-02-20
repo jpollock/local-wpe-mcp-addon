@@ -1,4 +1,5 @@
 import type { CapiClient } from '../../capi-client.js';
+import { findExpiringSslCerts } from '../../ssl-utils.js';
 
 export const wpePrepareGoLiveDef = {
   name: 'wpe_prepare_go_live',
@@ -65,8 +66,7 @@ export async function wpePrepareGoLiveHandler(
   if (certs.length === 0) {
     checks.push({ check: 'ssl_configured', status: 'fail', detail: 'No SSL certificates configured' });
   } else {
-    const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    const expiring = certs.filter((c) => c.expires_at && c.expires_at < thirtyDaysFromNow);
+    const expiring = findExpiringSslCerts(certs);
     if (expiring.length > 0) {
       checks.push({
         check: 'ssl_configured',
