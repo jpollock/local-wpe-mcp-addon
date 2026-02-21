@@ -128,6 +128,16 @@ const PROMPTS: PromptDef[] = [
     template: (args) =>
       `Perform a security review of account ${args.account_id}. Check SSL certificate status across all installs using wpe_account_ssl_status. Review account users with wpe_get_account_users. Flag expiring certificates, missing SSL, and review user access levels. Read wpengine://guide/safety for safety guidelines.`,
   },
+  {
+    name: 'promote-to-production',
+    description: 'Guide through promoting staging to production with backup, copy, and verification',
+    arguments: [
+      { name: 'staging_install_id', description: 'The staging install ID (source)', required: true },
+      { name: 'production_install_id', description: 'The production install ID (destination)', required: true },
+    ],
+    template: (args) =>
+      `Promote staging install ${args.staging_install_id} to production install ${args.production_install_id}. Read wpengine://guide/workflows/promote-to-production for the full workflow. Steps: 1) Compare environments with wpe_environment_diff and present the diff — ask the user if they want to proceed, 2) Create a backup of production with wpe_create_backup, 3) Poll wpe_get_backup until the backup status is "complete" (do NOT proceed until confirmed), 4) Copy staging to production with wpe_copy_install (source_environment_id: ${args.staging_install_id}, destination_environment_id: ${args.production_install_id}) — this is a Tier 3 destructive operation, 5) Purge caches with wpe_purge_cache, 6) Verify production health with wpe_diagnose_site. WARNING: This will overwrite production files and database.`,
+  },
 ];
 
 // --- Server factory ---

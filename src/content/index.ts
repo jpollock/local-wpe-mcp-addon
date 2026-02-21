@@ -60,6 +60,7 @@ WP Engine uses a hierarchical model: Account > Site > Install > (Domains, Backup
 - "Set up staging" → read \`wpengine://guide/workflows/staging-refresh\` for step-by-step guidance
 - "Go live" / "launch" → use \`wpe_prepare_go_live\` or read \`wpengine://guide/workflows/go-live\`
 - "Fleet health" / "what needs attention" → use \`wpe_fleet_health\`
+- "Promote" / "push to production" / "deploy staging" → use the promote-to-production prompt or read \`wpengine://guide/workflows/promote-to-production\`
 - "Account status" / "overview" → use \`wpe_account_overview\`
 - "Health check" / "diagnose" → use \`wpe_diagnose_site\`
 - "Domain migration" → read \`wpengine://guide/workflows/domain-migration\`

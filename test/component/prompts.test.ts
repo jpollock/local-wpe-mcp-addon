@@ -29,7 +29,8 @@ describe('MCP prompts', () => {
     expect(names).toContain('go-live-checklist');
     expect(names).toContain('domain-migration');
     expect(names).toContain('security-review');
-    expect(names).toHaveLength(6);
+    expect(names).toContain('promote-to-production');
+    expect(names).toHaveLength(7);
   });
 
   it('prompts include required arguments', async () => {
@@ -70,6 +71,22 @@ describe('MCP prompts', () => {
     expect(text).toContain('inst-prod');
     expect(text).toContain('site-1');
     expect(text).toContain('acc-1');
+  });
+
+  it('promote-to-production prompt includes both install IDs', async () => {
+    const { client } = await createConnectedPair();
+    const result = await client.getPrompt({
+      name: 'promote-to-production',
+      arguments: {
+        staging_install_id: 'inst-staging',
+        production_install_id: 'inst-prod',
+      },
+    });
+    const text = (result.messages[0].content as { type: string; text: string }).text;
+    expect(text).toContain('inst-staging');
+    expect(text).toContain('inst-prod');
+    expect(text).toContain('wpe_copy_install');
+    expect(text).toContain('wpe_create_backup');
   });
 
   it('prompt with missing required arg returns error', async () => {
