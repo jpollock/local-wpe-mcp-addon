@@ -58,9 +58,32 @@ The agent should return your WP Engine user details.
 - "How many total sites do I have across all accounts?"
 - "Which installs have the most traffic?"
 
+See [Example Prompts](example-prompts.md) for a full cookbook with detailed workflows and expected tool usage.
+
+## MCP Prompts
+
+The server includes 6 pre-built prompt templates for common workflows. In AI clients that support MCP prompts (e.g., Claude Desktop), these appear as selectable prompts:
+
+- **diagnose-site** — Health check for a specific install
+- **account-health** — Overall account health assessment
+- **setup-staging** — Guided staging environment creation
+- **go-live-checklist** — Pre-launch verification
+- **domain-migration** — Step-by-step domain migration
+- **security-review** — SSL and user access review
+
+Each prompt asks for the relevant IDs (install, account, site) and then guides the AI through the full workflow using the appropriate tools and knowledge resources.
+
+See the [MCP Prompts section](example-prompts.md#mcp-prompts) of the example prompts guide for details on each prompt.
+
 ## Next Steps
 
+- [Example Prompts](example-prompts.md) — Detailed prompt cookbook with workflows
 - [Claude Desktop Setup](claude-desktop-setup.md) — Configure Claude Desktop
 - [Claude Code Setup](claude-code-setup.md) — Configure Claude Code
 - [Standalone Setup](standalone-setup.md) — Run the server directly
 - [Troubleshooting](troubleshooting.md) — Common issues and fixes
+
+## Support
+
+- **Troubleshooting:** See the [troubleshooting guide](troubleshooting.md) for common issues
+- **Issues:** File bugs and feature requests at the project repository

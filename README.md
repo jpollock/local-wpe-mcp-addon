@@ -83,6 +83,7 @@ npm run generate-reference
 ## User Guides
 
 - [Getting Started](docs/user-guide/getting-started.md)
+- [Example Prompts](docs/user-guide/example-prompts.md)
 - [Claude Desktop Setup](docs/user-guide/claude-desktop-setup.md)
 - [Claude Code Setup](docs/user-guide/claude-code-setup.md)
 - [Standalone Setup](docs/user-guide/standalone-setup.md)
@@ -109,6 +110,20 @@ The core MCP server is a standalone Node.js process with zero dependency on Loca
 ### Testing
 
 Tests use [Vitest](https://vitest.dev/) with [MSW](https://mswjs.io/) for HTTP-level CAPI mocking. No live API credentials needed for unit or component tests.
+
+## Documentation
+
+- [Product Overview](docs/product-overview.md) — What this is, who it's for, what it can and can't do
+- [Architecture](docs/architecture.md) — How the system fits together
+- [Roadmap](docs/roadmap.md) — Current state and potential future work
+- [Known Issues](docs/known-issues.md) — Deferred findings and rationale
+- [Contributing](CONTRIBUTING.md) — Dev setup, PR process, testing
+- [Security](SECURITY.md) — Safety model, auth, audit logging
+
+## Support & Feedback
+
+- **Issues:** File bugs and feature requests at the project repository
+- **Troubleshooting:** See the [troubleshooting guide](docs/user-guide/troubleshooting.md)
 
 ## License
 
