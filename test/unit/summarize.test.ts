@@ -14,6 +14,7 @@ describe('hasSummarizer', () => {
     expect(hasSummarizer('wpe_diagnose_site')).toBe(true);
     expect(hasSummarizer('wpe_portfolio_overview')).toBe(true);
     expect(hasSummarizer('wpe_portfolio_usage')).toBe(true);
+    expect(hasSummarizer('wpe_fleet_health')).toBe(true);
   });
 
   it('returns false for unregistered tools', () => {
@@ -22,8 +23,8 @@ describe('hasSummarizer', () => {
     expect(hasSummarizer('wpe_delete_install')).toBe(false);
   });
 
-  it('registers exactly 11 summarizers', () => {
-    expect(SUMMARIZERS.size).toBe(11);
+  it('registers exactly 12 summarizers', () => {
+    expect(SUMMARIZERS.size).toBe(12);
   });
 });
 
@@ -658,6 +659,79 @@ describe('summarizePortfolioUsage', () => {
     };
 
     const result = applySummarization('wpe_portfolio_usage', input, true) as Record<string, unknown>;
+    expect(result.errors).toEqual([{ account_id: 'acc-2', error: 'forbidden' }]);
+  });
+});
+
+describe('summarizeFleetHealth', () => {
+  it('strips per-account headroom, keeps issue counts', () => {
+    const input = {
+      total_accounts: 2,
+      total_installs: 3,
+      issues: [
+        { severity: 'critical', category: 'ssl', account_id: 'acc-1', account_name: 'Account One', install_name: 'prod', message: 'SSL expired' },
+        { severity: 'warning', category: 'capacity', account_id: 'acc-2', account_name: 'Account Two', message: 'Storage at 85%' },
+      ],
+      accounts: [
+        {
+          account_id: 'acc-1',
+          account_name: 'Account One',
+          install_count: 1,
+          headroom: {
+            visitors: { allowed: 100000, used: 50000, percent_used: 50 },
+            storage: { allowed: 20000000000, used: 5000000000, percent_used: 25 },
+          },
+          issue_count: { critical: 1, warning: 0, info: 0 },
+        },
+        {
+          account_id: 'acc-2',
+          account_name: 'Account Two',
+          install_count: 2,
+          headroom: {
+            visitors: { allowed: 100000, used: 60000, percent_used: 60 },
+            storage: { allowed: 20000000000, used: 17000000000, percent_used: 85 },
+          },
+          issue_count: { critical: 0, warning: 1, info: 0 },
+        },
+      ],
+    };
+
+    const result = applySummarization('wpe_fleet_health', input, true) as Record<string, unknown>;
+
+    expect(result.summary).toBe(true);
+    expect(result.total_accounts).toBe(2);
+    expect(result.total_installs).toBe(3);
+    expect(result.issues).toEqual(input.issues);
+
+    const accounts = result.accounts as Array<Record<string, unknown>>;
+    expect(accounts).toHaveLength(2);
+    // Headroom should be stripped
+    expect(accounts[0]).toEqual({
+      account_id: 'acc-1',
+      account_name: 'Account One',
+      install_count: 1,
+      issue_count: { critical: 1, warning: 0, info: 0 },
+    });
+    expect(accounts[0]).not.toHaveProperty('headroom');
+    expect(accounts[1]).not.toHaveProperty('headroom');
+  });
+
+  it('passes through error responses', () => {
+    const input = { error: { status: 403, message: 'Forbidden' } };
+    const result = applySummarization('wpe_fleet_health', input, true);
+    expect(result).toBe(input);
+  });
+
+  it('preserves errors array', () => {
+    const input = {
+      total_accounts: 2,
+      total_installs: 1,
+      issues: [],
+      accounts: [{ account_id: 'acc-1', account_name: 'OK', install_count: 1, issue_count: { critical: 0, warning: 0, info: 0 } }],
+      errors: [{ account_id: 'acc-2', error: 'forbidden' }],
+    };
+
+    const result = applySummarization('wpe_fleet_health', input, true) as Record<string, unknown>;
     expect(result.errors).toEqual([{ account_id: 'acc-2', error: 'forbidden' }]);
   });
 });

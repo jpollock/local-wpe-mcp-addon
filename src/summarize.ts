@@ -272,6 +272,29 @@ function summarizePortfolioUsage(data: unknown): unknown {
   };
 }
 
+/**
+ * wpe_fleet_health — strip per-account headroom detail, keep issue counts.
+ */
+function summarizeFleetHealth(data: unknown): unknown {
+  const d = data as AnyRecord;
+  if (d?.error || !d?.issues) return data;
+
+  const accounts = (d.accounts as AnyRecord[] | undefined) ?? [];
+  return {
+    summary: true,
+    total_accounts: d.total_accounts ?? 0,
+    total_installs: d.total_installs ?? 0,
+    issues: d.issues,
+    accounts: accounts.map((a) => ({
+      account_id: a.account_id,
+      account_name: a.account_name,
+      install_count: a.install_count ?? 0,
+      issue_count: a.issue_count,
+    })),
+    ...(d.errors ? { errors: d.errors } : {}),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
@@ -288,6 +311,7 @@ export const SUMMARIZERS: ReadonlyMap<string, Summarizer> = new Map<string, Summ
   ['wpe_diagnose_site', summarizeDiagnoseSite],
   ['wpe_portfolio_overview', summarizePortfolioOverview],
   ['wpe_portfolio_usage', summarizePortfolioUsage],
+  ['wpe_fleet_health', summarizeFleetHealth],
 ]);
 
 export function hasSummarizer(toolName: string): boolean {

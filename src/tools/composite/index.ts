@@ -10,6 +10,7 @@ import { wpePrepareGoLiveDef, wpePrepareGoLiveHandler } from './prepare-go-live.
 import { wpeEnvironmentDiffDef, wpeEnvironmentDiffHandler } from './environment-diff.js';
 import { wpePortfolioOverviewDef, wpePortfolioOverviewHandler } from './portfolio-overview.js';
 import { wpePortfolioUsageDef, wpePortfolioUsageHandler } from './portfolio-usage.js';
+import { wpeFleetHealthDef, wpeFleetHealthHandler } from './fleet-health.js';
 
 export const allCompositeTools: ToolRegistration[] = [
   { def: wpeAccountOverviewDef, handler: wpeAccountOverviewHandler },
@@ -22,4 +23,5 @@ export const allCompositeTools: ToolRegistration[] = [
   { def: wpeEnvironmentDiffDef, handler: wpeEnvironmentDiffHandler },
   { def: wpePortfolioOverviewDef, handler: wpePortfolioOverviewHandler },
   { def: wpePortfolioUsageDef, handler: wpePortfolioUsageHandler },
+  { def: wpeFleetHealthDef, handler: wpeFleetHealthHandler },
 ];
