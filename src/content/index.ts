@@ -59,6 +59,7 @@ WP Engine uses a hierarchical model: Account > Site > Install > (Domains, Backup
 - "Most visited" / "top sites by traffic" / "storage usage" → use \`wpe_portfolio_usage\`
 - "Set up staging" → read \`wpengine://guide/workflows/staging-refresh\` for step-by-step guidance
 - "Go live" / "launch" → use \`wpe_prepare_go_live\` or read \`wpengine://guide/workflows/go-live\`
+- "Fleet health" / "what needs attention" → use \`wpe_fleet_health\`
 - "Account status" / "overview" → use \`wpe_account_overview\`
 - "Health check" / "diagnose" → use \`wpe_diagnose_site\`
 - "Domain migration" → read \`wpengine://guide/workflows/domain-migration\`
@@ -70,6 +71,7 @@ WP Engine uses a hierarchical model: Account > Site > Install > (Domains, Backup
 For cross-account questions, use portfolio tools instead of querying each account individually:
 - \`wpe_portfolio_overview\` — all accounts, sites, and installs in one view
 - \`wpe_portfolio_usage\` — usage ranked across all accounts
+- \`wpe_fleet_health\` — scored health assessment across all accounts (SSL, capacity, PHP, status)
 
 For single-account views:
 - \`wpe_account_overview\` — account summary with limits and usage
