@@ -26,6 +26,7 @@ export const TIER_OVERRIDES: Record<string, SafetyTier> = {
   wpe_create_site: 3,
   wpe_create_install: 3,
   wpe_create_account_user: 3,
+  wpe_promote_to_production: 3,
 };
 
 const CONFIRMATION_MESSAGES: Record<string, string> = {
@@ -38,6 +39,7 @@ const CONFIRMATION_MESSAGES: Record<string, string> = {
   wpe_create_site: 'This will create a new billable site on the account.',
   wpe_create_install: 'This will create a new install on the site.',
   wpe_create_account_user: 'This will grant a new user access to the account.',
+  wpe_promote_to_production: 'This will backup production, then overwrite it with staging content (files and database).',
 };
 
 const PRE_CHECKS: Record<string, string[]> = {
@@ -62,6 +64,10 @@ const PRE_CHECKS: Record<string, string[]> = {
   wpe_create_account_user: [
     'Verify the user email is correct',
     'Confirm the intended access level',
+  ],
+  wpe_promote_to_production: [
+    'Verify the staging install has been tested',
+    'Confirm the production install ID is correct',
   ],
 };
 

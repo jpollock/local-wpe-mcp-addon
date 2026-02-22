@@ -295,6 +295,26 @@ function summarizeFleetHealth(data: unknown): unknown {
   };
 }
 
+/**
+ * wpe_promote_to_production — strip diff detail and verbose install fields, keep step outcomes.
+ */
+function summarizePromoteToProduction(data: unknown): unknown {
+  const d = data as AnyRecord;
+  if (d?.error) return data;
+
+  return {
+    summary: true,
+    staging: d.staging ? { id: d.staging.id, name: d.staging.name, environment: d.staging.environment } : null,
+    production: d.production ? { id: d.production.id, name: d.production.name, environment: d.production.environment } : null,
+    diff_count: Array.isArray(d.diff) ? d.diff.length : 0,
+    warnings: d.warnings,
+    backup: d.backup,
+    copy: d.copy,
+    cache_purge: d.cache_purge,
+    post_copy_status: d.post_copy_status ? { id: d.post_copy_status.id, status: d.post_copy_status.status } : d.post_copy_status,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
@@ -312,6 +332,7 @@ export const SUMMARIZERS: ReadonlyMap<string, Summarizer> = new Map<string, Summ
   ['wpe_portfolio_overview', summarizePortfolioOverview],
   ['wpe_portfolio_usage', summarizePortfolioUsage],
   ['wpe_fleet_health', summarizeFleetHealth],
+  ['wpe_promote_to_production', summarizePromoteToProduction],
 ]);
 
 export function hasSummarizer(toolName: string): boolean {

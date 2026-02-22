@@ -11,6 +11,7 @@ import { wpeEnvironmentDiffDef, wpeEnvironmentDiffHandler } from './environment-
 import { wpePortfolioOverviewDef, wpePortfolioOverviewHandler } from './portfolio-overview.js';
 import { wpePortfolioUsageDef, wpePortfolioUsageHandler } from './portfolio-usage.js';
 import { wpeFleetHealthDef, wpeFleetHealthHandler } from './fleet-health.js';
+import { wpePromoteToProductionDef, wpePromoteToProductionHandler } from './promote-to-production.js';
 
 export const allCompositeTools: ToolRegistration[] = [
   { def: wpeAccountOverviewDef, handler: wpeAccountOverviewHandler },
@@ -24,4 +25,5 @@ export const allCompositeTools: ToolRegistration[] = [
   { def: wpePortfolioOverviewDef, handler: wpePortfolioOverviewHandler },
   { def: wpePortfolioUsageDef, handler: wpePortfolioUsageHandler },
   { def: wpeFleetHealthDef, handler: wpeFleetHealthHandler },
+  { def: wpePromoteToProductionDef, handler: wpePromoteToProductionHandler },
 ];

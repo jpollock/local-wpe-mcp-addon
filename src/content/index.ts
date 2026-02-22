@@ -62,6 +62,7 @@ WP Engine uses a hierarchical model: Account > Site > Install > (Domains, Backup
 - "Fleet health" / "what needs attention" → use \`wpe_fleet_health\`
 - "Account status" / "overview" → use \`wpe_account_overview\`
 - "Health check" / "diagnose" → use \`wpe_diagnose_site\`
+- "Promote" / "push to production" / "deploy staging" → use \`wpe_promote_to_production\`
 - "Domain migration" → read \`wpengine://guide/workflows/domain-migration\`
 - "Disaster recovery" → read \`wpengine://guide/workflows/disaster-recovery\`
 - "New site" / "new environment" → read \`wpengine://guide/workflows/new-environment\`
@@ -80,6 +81,7 @@ For single-account views:
 - \`wpe_account_environments\` — topology map of all sites and installs
 - \`wpe_diagnose_site\` — comprehensive health check for one install
 - \`wpe_environment_diff\` — compare two installs side by side
+- \`wpe_promote_to_production\` — backup, copy staging to production, purge, verify
 
 Use individual tools for targeted operations on specific resources.
 
