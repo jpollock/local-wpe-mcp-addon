@@ -15,6 +15,7 @@ describe('hasSummarizer', () => {
     expect(hasSummarizer('wpe_portfolio_overview')).toBe(true);
     expect(hasSummarizer('wpe_portfolio_usage')).toBe(true);
     expect(hasSummarizer('wpe_fleet_health')).toBe(true);
+    expect(hasSummarizer('wpe_promote_to_production')).toBe(true);
   });
 
   it('returns false for unregistered tools', () => {
@@ -23,8 +24,8 @@ describe('hasSummarizer', () => {
     expect(hasSummarizer('wpe_delete_install')).toBe(false);
   });
 
-  it('registers exactly 12 summarizers', () => {
-    expect(SUMMARIZERS.size).toBe(12);
+  it('registers exactly 13 summarizers', () => {
+    expect(SUMMARIZERS.size).toBe(13);
   });
 });
 
@@ -733,5 +734,48 @@ describe('summarizeFleetHealth', () => {
 
     const result = applySummarization('wpe_fleet_health', input, true) as Record<string, unknown>;
     expect(result.errors).toEqual([{ account_id: 'acc-2', error: 'forbidden' }]);
+  });
+});
+
+describe('summarizePromoteToProduction', () => {
+  it('strips diff detail and verbose install fields, keeps step outcomes', () => {
+    const input = {
+      staging: { id: 's1', name: 'staging', environment: 'staging', php_version: '8.2', status: 'active', primary_domain: 'staging.example.com' },
+      production: { id: 'p1', name: 'prod', environment: 'production', php_version: '8.2', status: 'active', primary_domain: 'example.com' },
+      diff: [
+        { field: 'environment', staging: 'staging', production: 'production' },
+        { field: 'primary_domain', staging: 'staging.example.com', production: 'example.com' },
+      ],
+      warnings: [],
+      backup: { id: 'backup-1', status: 'in_progress' },
+      copy: { success: true },
+      cache_purge: { success: true },
+      post_copy_status: { id: 'p1', name: 'prod', status: 'active', primary_domain: 'example.com' },
+    };
+
+    const result = applySummarization('wpe_promote_to_production', input, true) as Record<string, unknown>;
+
+    expect(result.summary).toBe(true);
+    // Install summaries condensed to id/name/environment
+    expect(result.staging).toEqual({ id: 's1', name: 'staging', environment: 'staging' });
+    expect(result.production).toEqual({ id: 'p1', name: 'prod', environment: 'production' });
+    // Diff replaced with count
+    expect(result.diff_count).toBe(2);
+    expect(result).not.toHaveProperty('diff');
+    // Step outcomes preserved
+    expect(result.backup).toEqual({ id: 'backup-1', status: 'in_progress' });
+    expect(result.copy).toEqual({ success: true });
+    expect(result.cache_purge).toEqual({ success: true });
+    // Post-copy condensed to id/status
+    const postCopy = result.post_copy_status as Record<string, unknown>;
+    expect(postCopy.id).toBe('p1');
+    expect(postCopy.status).toBe('active');
+    expect(postCopy).not.toHaveProperty('primary_domain');
+  });
+
+  it('passes through error responses', () => {
+    const input = { error: { status: 404, message: 'Not found' } };
+    const result = applySummarization('wpe_promote_to_production', input, true);
+    expect(result).toBe(input);
   });
 });
