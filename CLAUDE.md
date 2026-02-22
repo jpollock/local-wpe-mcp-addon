@@ -25,7 +25,7 @@ standalone with env var auth for testing and CI.
 | 6. Local Addon Integration | DONE | Addon loads in Local, OAuth works, both transports |
 | 7. Polish | DONE | User docs, tool reference, drift detection, packaging |
 
-**Current state:** 60 tools (50 generated + 10 composite), 251 tests, 11 summarizers, 6 prompts.
+**Current state:** 62 tools (50 generated + 12 composite), 268 tests, 13 summarizers, 6 prompts.
 See `docs/deviations.md` for differences between original spec and implementation.
 
 ## Key Decisions (Summary)

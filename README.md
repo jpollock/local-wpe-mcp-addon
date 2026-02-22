@@ -4,7 +4,7 @@ An MCP server that gives AI agents full access to the [WP Engine Customer API](h
 
 ## Features
 
-- **60 tools** — 50 auto-generated from the CAPI swagger spec + 10 hand-written composite tools
+- **62 tools** — 50 auto-generated from the CAPI swagger spec + 12 hand-written composite tools
 - **3-tier safety system** — Read (Tier 1), Modify (Tier 2), Destructive (Tier 3) with confirmation tokens
 - **Summarization** — Large responses condensed by default to prevent context overflow
 - **Portfolio views** — Cross-account aggregation for users with multiple accounts
@@ -94,7 +94,7 @@ npm run generate-reference
 ```bash
 npm install              # Install dependencies
 npm run build            # Compile TypeScript
-npm test                 # Run all tests (251 tests)
+npm test                 # Run all tests (268 tests)
 npm run test:unit        # Unit tests only
 npm run test:component   # Component tests only (mocked CAPI)
 npm run codegen          # Regenerate tools from swagger.json
