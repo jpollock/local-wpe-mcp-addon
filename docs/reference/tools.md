@@ -5,8 +5,8 @@
 ## Summary
 
 - **Generated tools:** 50
-- **Composite tools:** 10
-- **Total tools:** 60
+- **Composite tools:** 12
+- **Total tools:** 62
 
 ## Generated Tools (CAPI 1:1)
 
@@ -74,9 +74,11 @@
 | `wpe_account_usage` | Get account usage metrics with insights and trends. | Read-only | Composite |
 | `wpe_diagnose_site` | Run a comprehensive health check on a single install: usage, domains, and SSL. | Read-only | Composite |
 | `wpe_environment_diff` | Compare two installs side-by-side: configuration, domains, and usage differences | Read-only | Composite |
+| `wpe_fleet_health` | Run a health assessment across all accounts. Checks SSL certificates, capacity h | Read-only | Composite |
 | `wpe_portfolio_overview` | Get a consolidated view of all accounts, sites, and installs the user has access | Read-only | Composite |
 | `wpe_portfolio_usage` | Get usage metrics across all accounts, ranked by visits. Use for cross-account q | Read-only | Composite |
 | `wpe_prepare_go_live` | Run a pre-launch checklist for an install: verify domains and SSL certificates. | Read-only | Composite |
+| `wpe_promote_to_production` | Promote staging to production. Creates a backup of production, copies staging fi | Destructive | Composite |
 
 ## Detailed Reference
 
@@ -932,6 +934,13 @@ Compare two installs side-by-side: configuration, domains, and usage differences
 | `install_id_a` | string | Yes | First install ID |
 | `install_id_b` | string | Yes | Second install ID |
 
+### `wpe_fleet_health`
+
+Run a health assessment across all accounts. Checks SSL certificates, capacity headroom, PHP version consistency, and install status. Returns prioritized issues ranked by severity.
+
+- **Safety:** Read-only
+- **Type:** Composite tool
+
 ### `wpe_portfolio_overview`
 
 Get a consolidated view of all accounts, sites, and installs the user has access to. Use for cross-account questions like "how many sites do I have?" or "what PHP versions am I running?"
@@ -958,3 +967,18 @@ Run a pre-launch checklist for an install: verify domains and SSL certificates.
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `install_id` | string | Yes | The install ID to check |
+
+### `wpe_promote_to_production`
+
+Promote staging to production. Creates a backup of production, copies staging files and database to production, purges cache, and verifies health. Use instead of wpe_copy_install for staging-to-production promotions.
+
+- **Safety:** Destructive
+- **Type:** Composite tool
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `staging_install_id` | string | Yes | The staging install ID (source) |
+| `production_install_id` | string | Yes | The production install ID (destination) |
+| `notification_emails` | array | No | Email addresses to notify when the copy completes |

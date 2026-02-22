@@ -102,6 +102,25 @@ The agent reads `wpengine://guide/workflows/staging-refresh` and follows these s
 
 The agent calls `wpe_copy_install` with the production install as source and staging as destination. This is a Tier 3 operation that requires confirmation because it overwrites the destination.
 
+### Fleet health check
+
+> "What needs attention across all my accounts?"
+
+The agent calls `wpe_fleet_health`, which checks SSL certificates, capacity headroom, PHP version consistency, and install status across every account. It returns a scored, prioritized list of issues grouped by severity (critical, warning, info).
+
+### Promote staging to production
+
+> "Promote staging to production for my site"
+
+The agent calls `wpe_promote_to_production` with the staging and production install IDs. This is a Tier 3 operation that requires confirmation. Once confirmed, it runs the full sequence server-side:
+1. Fetches both installs and diffs their configuration
+2. Creates a backup of production
+3. Copies staging files and database to production
+4. Purges the production cache
+5. Verifies the production install post-copy
+
+If the backup fails, the copy is not attempted. If the copy fails, the backup ID is returned so you can restore.
+
 ---
 
 ## Security Review

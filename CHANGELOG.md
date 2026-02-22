@@ -1,15 +1,24 @@
 # Changelog
 
+## 0.2.0
+
+### Added
+
+- **`wpe_fleet_health`** — Cross-account health assessment that checks SSL certificates, capacity headroom, PHP version consistency, and install status across all accounts. Returns scored, prioritized issues.
+- **`wpe_promote_to_production`** — Server-side orchestrated staging-to-production promotion: diff → backup → copy → purge cache → verify health. Tier 3 (destructive) with confirmation token. Replaces error-prone prompt-based approach where agents skipped safety steps.
+- 2 new summarizers (13 total) for the new composite tools
+- 7 new component tests (268 total)
+
 ## 0.1.0
 
 Initial release of the WP Engine CAPI MCP Server.
 
 ### Features
 
-- **60 tools** — 50 generated 1:1 mappings from the WP Engine Customer API (accounts, sites, installs, domains, backups, SSL certificates, SSH keys, cache, usage metrics, offload settings) + 10 composite tools
-- **10 composite tools** — account overview, account usage, account domains, SSL status, account environments, diagnose site, prepare go-live, environment diff, portfolio overview, portfolio usage
+- **62 tools** — 50 generated 1:1 mappings from the WP Engine Customer API (accounts, sites, installs, domains, backups, SSL certificates, SSH keys, cache, usage metrics, offload settings) + 12 composite tools
+- **12 composite tools** — account overview, account usage, account domains, SSL status, account environments, diagnose site, prepare go-live, environment diff, portfolio overview, portfolio usage, fleet health, promote to production
 - **3-tier safety system** — Read-only (Tier 1), mutating (Tier 2), destructive (Tier 3) with confirmation tokens for Tier 3 operations
-- **Summarization layer** — 11 summarizers that condense large responses by default, preventing context overflow in AI clients. Opt out with `summary=false`.
+- **Summarization layer** — 13 summarizers that condense large responses by default, preventing context overflow in AI clients. Opt out with `summary=false`.
 - **Portfolio tools** — Cross-account aggregation via `wpe_portfolio_overview` and `wpe_portfolio_usage` for users with multiple WP Engine accounts
 - **Audit logging** — All tool calls logged with timing, parameters (sensitive values redacted), and results
 - **Knowledge layer** — MCP resources for domain model, safety, troubleshooting guides, and 5 workflow guides (go-live, staging refresh, domain migration, disaster recovery, new environment)

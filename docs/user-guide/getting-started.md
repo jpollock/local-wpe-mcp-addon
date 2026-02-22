@@ -54,6 +54,10 @@ The agent should return your WP Engine user details.
 - "Request an SSL certificate for example.com"
 - "Purge the cache on install abc123"
 
+### Deploy and promote
+- "Promote staging to production for my site"
+- "What needs attention across all my accounts?"
+
 ### Cross-account views
 - "How many total sites do I have across all accounts?"
 - "Which installs have the most traffic?"
