@@ -16,6 +16,7 @@ describe('hasSummarizer', () => {
     expect(hasSummarizer('wpe_portfolio_usage')).toBe(true);
     expect(hasSummarizer('wpe_fleet_health')).toBe(true);
     expect(hasSummarizer('wpe_promote_to_production')).toBe(true);
+    expect(hasSummarizer('wpe_user_audit')).toBe(true);
   });
 
   it('returns false for unregistered tools', () => {
@@ -24,8 +25,8 @@ describe('hasSummarizer', () => {
     expect(hasSummarizer('wpe_delete_install')).toBe(false);
   });
 
-  it('registers exactly 13 summarizers', () => {
-    expect(SUMMARIZERS.size).toBe(13);
+  it('registers exactly 14 summarizers', () => {
+    expect(SUMMARIZERS.size).toBe(14);
   });
 });
 
@@ -733,6 +734,87 @@ describe('summarizeFleetHealth', () => {
     };
 
     const result = applySummarization('wpe_fleet_health', input, true) as Record<string, unknown>;
+    expect(result.errors).toEqual([{ account_id: 'acc-2', error: 'forbidden' }]);
+  });
+});
+
+describe('summarizeUserAudit', () => {
+  it('strips per-account details, keeps per-user summary with account count', () => {
+    const input = {
+      total_users: 2,
+      total_accounts: 3,
+      users: [
+        {
+          email: 'alice@example.com',
+          first_name: 'Alice',
+          last_name: 'Smith',
+          mfa_enabled: true,
+          invite_accepted: true,
+          accounts: [
+            { account_id: 'acc-1', account_name: 'Account One', roles: 'full', last_owner: false, installs: ['i1'] },
+            { account_id: 'acc-2', account_name: 'Account Two', roles: 'partial', last_owner: false, installs: ['i2'] },
+          ],
+        },
+        {
+          email: 'bob@example.com',
+          first_name: 'Bob',
+          last_name: 'Jones',
+          mfa_enabled: false,
+          invite_accepted: true,
+          accounts: [
+            { account_id: 'acc-1', account_name: 'Account One', roles: 'owner', last_owner: true, installs: null },
+          ],
+        },
+      ],
+      warnings: ['bob@example.com: MFA not enabled'],
+    };
+
+    const result = applySummarization('wpe_user_audit', input, true) as Record<string, unknown>;
+
+    expect(result.summary).toBe(true);
+    expect(result.total_users).toBe(2);
+    expect(result.total_accounts).toBe(3);
+
+    const users = result.users as Array<Record<string, unknown>>;
+    expect(users).toHaveLength(2);
+    expect(users[0]).toEqual({
+      email: 'alice@example.com',
+      name: 'Alice Smith',
+      mfa_enabled: true,
+      invite_accepted: true,
+      account_count: 2,
+    });
+    expect(users[1]).toEqual({
+      email: 'bob@example.com',
+      name: 'Bob Jones',
+      mfa_enabled: false,
+      invite_accepted: true,
+      account_count: 1,
+    });
+
+    // Per-account details should not be in summarized users
+    expect(users[0]).not.toHaveProperty('accounts');
+    expect(users[0]).not.toHaveProperty('first_name');
+
+    expect(result.warnings).toEqual(['bob@example.com: MFA not enabled']);
+  });
+
+  it('passes through error responses', () => {
+    const input = { error: { status: 403, message: 'Forbidden' } };
+    const result = applySummarization('wpe_user_audit', input, true);
+    expect(result).toBe(input);
+  });
+
+  it('preserves errors array', () => {
+    const input = {
+      total_users: 1,
+      total_accounts: 2,
+      users: [{ email: 'alice@example.com', first_name: 'Alice', last_name: 'Smith', mfa_enabled: true, invite_accepted: true, accounts: [] }],
+      warnings: [],
+      errors: [{ account_id: 'acc-2', error: 'forbidden' }],
+    };
+
+    const result = applySummarization('wpe_user_audit', input, true) as Record<string, unknown>;
     expect(result.errors).toEqual([{ account_id: 'acc-2', error: 'forbidden' }]);
   });
 });

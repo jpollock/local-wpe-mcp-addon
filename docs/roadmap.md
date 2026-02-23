@@ -4,9 +4,9 @@
 
 **v0.1.0** — Feature-complete initial release.
 
-- 60 tools (50 generated from CAPI swagger + 10 composite)
-- 254 tests across unit, component, and integration layers
-- 11 summarizers for large-response tools
+- 66 tools (50 generated from CAPI swagger + 16 composite)
+- 285 tests across unit, component, and integration layers
+- 14 summarizers for large-response tools
 - 6 MCP prompts for guided workflows
 - 8 knowledge resources (guides + workflows)
 - Dual transport (stdio + HTTP/SSE)
@@ -49,7 +49,7 @@ The long-horizon play. WordPress Core is building its own MCP surface (Abilities
 | **WordPress.com** | Broad REST API across sites, content, stats. | Official Claude Connector with OAuth 2.1. MCP-first architecture. First host to ship MCP. | Cross-product MCP (WordPress.com, Pressable, Tumblr). Platform layer via Abilities API. |
 | **WordPress VIP** | REST + GraphQL + MCP. Parse.ly integration. | AI content intelligence. Streaming data firehose. | Enterprise AI positioning. Content analytics. |
 | **Pressable** | REST API for hosting ops. Webhook support. Data sync. | No dedicated MCP. | Event-driven automation via webhooks. |
-| **WP Engine** | Full CAPI coverage for infrastructure. No application-layer endpoints. | This project. 60 tools, composite workflows, knowledge layer. | Strongest portfolio/fleet breadth. ACF ecosystem (untapped). |
+| **WP Engine** | Full CAPI coverage for infrastructure. No application-layer endpoints. | This project. 66 tools, composite workflows, knowledge layer. | Strongest portfolio/fleet breadth. ACF ecosystem (untapped). |
 
 **Key gap vs. Kinsta:** Per-install application context — plugins, logs, analytics. Kinsta's agent can reason about what's *running* on the install, ours can only reason about the install itself.
 

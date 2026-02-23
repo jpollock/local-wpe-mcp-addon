@@ -63,6 +63,10 @@ WP Engine uses a hierarchical model: Account > Site > Install > (Domains, Backup
 - "Account status" / "overview" → use \`wpe_account_overview\`
 - "Health check" / "diagnose" → use \`wpe_diagnose_site\`
 - "Promote" / "push to production" / "deploy staging" → use \`wpe_promote_to_production\`
+- "User audit" / "who has access" / "list all users" → use \`wpe_user_audit\`
+- "Add user" / "onboard user" → use \`wpe_add_user_to_accounts\`
+- "Remove user" / "offboard user" → use \`wpe_remove_user_from_accounts\`
+- "Change role" / "update permissions" → use \`wpe_update_user_role\`
 - "Domain migration" → read \`wpengine://guide/workflows/domain-migration\`
 - "Disaster recovery" → read \`wpengine://guide/workflows/disaster-recovery\`
 - "New site" / "new environment" → read \`wpengine://guide/workflows/new-environment\`
@@ -82,6 +86,12 @@ For single-account views:
 - \`wpe_diagnose_site\` — comprehensive health check for one install
 - \`wpe_environment_diff\` — compare two installs side by side
 - \`wpe_promote_to_production\` — backup, copy staging to production, purge, verify
+
+For user management across accounts:
+- \`wpe_user_audit\` — cross-account user report with deduplication and security warnings
+- \`wpe_add_user_to_accounts\` — add a user to multiple accounts at once
+- \`wpe_remove_user_from_accounts\` — remove a user from one or all accounts (last-owner protected)
+- \`wpe_update_user_role\` — change a user's role on an account (last-owner protected)
 
 Use individual tools for targeted operations on specific resources.
 

@@ -5,8 +5,8 @@
 ## Summary
 
 - **Generated tools:** 50
-- **Composite tools:** 12
-- **Total tools:** 62
+- **Composite tools:** 16
+- **Total tools:** 66
 
 ## Generated Tools (CAPI 1:1)
 
@@ -72,6 +72,7 @@
 | `wpe_account_overview` | Get a comprehensive overview of a WP Engine account: details, limits, usage summ | Read-only | Composite |
 | `wpe_account_ssl_status` | Check SSL certificate status across all installs in an account, flagging expirin | Read-only | Composite |
 | `wpe_account_usage` | Get account usage metrics with insights and trends. | Read-only | Composite |
+| `wpe_add_user_to_accounts` | Add a user to multiple WP Engine accounts with a specified role. Processes accou | Destructive | Composite |
 | `wpe_diagnose_site` | Run a comprehensive health check on a single install: usage, domains, and SSL. | Read-only | Composite |
 | `wpe_environment_diff` | Compare two installs side-by-side: configuration, domains, and usage differences | Read-only | Composite |
 | `wpe_fleet_health` | Run a health assessment across all accounts. Checks SSL certificates, capacity h | Read-only | Composite |
@@ -79,6 +80,9 @@
 | `wpe_portfolio_usage` | Get usage metrics across all accounts, ranked by visits. Use for cross-account q | Read-only | Composite |
 | `wpe_prepare_go_live` | Run a pre-launch checklist for an install: verify domains and SSL certificates. | Read-only | Composite |
 | `wpe_promote_to_production` | Promote staging to production. Creates a backup of production, copies staging fi | Destructive | Composite |
+| `wpe_remove_user_from_accounts` | Remove a user from one or more WP Engine accounts. If no account_ids are provide | Destructive | Composite |
+| `wpe_update_user_role` | Change a user's role on a specific WP Engine account. Refuses to demote the last | Destructive | Composite |
+| `wpe_user_audit` | Cross-account user audit. Lists all users across all accounts, deduplicates by e | Read-only | Composite |
 
 ## Detailed Reference
 
@@ -907,6 +911,24 @@ Get account usage metrics with insights and trends.
 |------|------|----------|-------------|
 | `account_id` | string | Yes | The account ID |
 
+### `wpe_add_user_to_accounts`
+
+Add a user to multiple WP Engine accounts with a specified role. Processes accounts sequentially and skips accounts where the user already exists. Use for onboarding a team member across an agency portfolio.
+
+- **Safety:** Destructive
+- **Type:** Composite tool
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `email` | string | Yes | Email address of the user to add |
+| `first_name` | string | Yes | First name of the user |
+| `last_name` | string | Yes | Last name of the user |
+| `roles` | string | Yes | Role to assign. Valid values: 'owner', 'full', 'full,billing', 'partial', 'partial,billing' |
+| `account_ids` | array | Yes | Account IDs to add the user to |
+| `install_ids` | array | No | Install IDs for partial role users (optional) |
+
 ### `wpe_diagnose_site`
 
 Run a comprehensive health check on a single install: usage, domains, and SSL.
@@ -982,3 +1004,40 @@ Promote staging to production. Creates a backup of production, copies staging fi
 | `staging_install_id` | string | Yes | The staging install ID (source) |
 | `production_install_id` | string | Yes | The production install ID (destination) |
 | `notification_emails` | array | No | Email addresses to notify when the copy completes |
+
+### `wpe_remove_user_from_accounts`
+
+Remove a user from one or more WP Engine accounts. If no account_ids are provided, removes the user from ALL accounts. Protects against removing the last owner. Use for offboarding a team member across an agency portfolio.
+
+- **Safety:** Destructive
+- **Type:** Composite tool
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `email` | string | Yes | Email address of the user to remove |
+| `account_ids` | array | No | Account IDs to remove the user from. If omitted, removes from ALL accounts. |
+
+### `wpe_update_user_role`
+
+Change a user's role on a specific WP Engine account. Refuses to demote the last owner. Use for adjusting team member permissions.
+
+- **Safety:** Destructive
+- **Type:** Composite tool
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `email` | string | Yes | Email address of the user to update |
+| `account_id` | string | Yes | Account ID where the role change applies |
+| `roles` | string | Yes | New role to assign. Valid values: 'owner', 'full', 'full,billing', 'partial', 'partial,billing' |
+| `install_ids` | array | No | Install IDs for partial role users (optional) |
+
+### `wpe_user_audit`
+
+Cross-account user audit. Lists all users across all accounts, deduplicates by email, and flags security concerns (no MFA, pending invites). Use for agency-wide user access reviews.
+
+- **Safety:** Read-only
+- **Type:** Composite tool

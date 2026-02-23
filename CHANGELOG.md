@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0
+
+### Added
+
+- **`wpe_user_audit`** — Cross-account user report. Fans out across all accounts, collects users, deduplicates by email, flags MFA and invite warnings. Tier 1 (read-only).
+- **`wpe_add_user_to_accounts`** — Add a user to multiple accounts with a specified role. Skips accounts where user already exists. Tier 3 with confirmation.
+- **`wpe_remove_user_from_accounts`** — Remove a user from one or all accounts. Last-owner protection built in. Tier 3 with confirmation.
+- **`wpe_update_user_role`** — Change a user's role on a specific account. Refuses to demote the last owner. Tier 3 with confirmation.
+- 1 new summarizer for `wpe_user_audit` (14 total)
+- 14 new component tests (285 total)
+
 ## 0.2.0
 
 ### Added

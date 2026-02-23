@@ -28,7 +28,7 @@ Instead of navigating the portal, users ask their AI assistant directly:
 
 ### Full API Coverage
 
-60 tools covering every WP Engine Customer API endpoint:
+66 tools covering every WP Engine Customer API endpoint:
 
 - **Accounts** — List, view details, manage users
 - **Sites** — Create, list, view, update, delete
@@ -54,6 +54,15 @@ Composite tools that combine multiple API calls into actionable assessments:
 - **Go-live checklist** — Pre-launch verification covering domains, SSL, and install health
 - **Environment diff** — Side-by-side comparison of two installs
 - **SSL audit** — Certificate status across all installs in an account
+
+### User Management
+
+Cross-account user operations for agencies managing multiple accounts:
+
+- **User audit** — All users across all accounts, deduplicated by email, with MFA and invite warnings
+- **Bulk add** — Add a user to multiple accounts with a specified role
+- **Bulk remove** — Remove a user from one or all accounts with last-owner protection
+- **Role update** — Change a user's role on an account with last-owner demotion guard
 
 ### Guided Workflows
 
