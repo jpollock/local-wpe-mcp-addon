@@ -296,6 +296,30 @@ function summarizeFleetHealth(data: unknown): unknown {
 }
 
 /**
+ * wpe_user_audit — strip per-account user details, keep per-user summary with account count.
+ */
+function summarizeUserAudit(data: unknown): unknown {
+  const d = data as AnyRecord;
+  if (d?.error || !d?.users) return data;
+
+  const users = d.users as AnyRecord[];
+  return {
+    summary: true,
+    total_users: d.total_users ?? users.length,
+    total_accounts: d.total_accounts ?? 0,
+    users: users.map((u) => ({
+      email: u.email,
+      name: [u.first_name, u.last_name].filter(Boolean).join(' ') || null,
+      mfa_enabled: u.mfa_enabled ?? null,
+      invite_accepted: u.invite_accepted ?? null,
+      account_count: Array.isArray(u.accounts) ? u.accounts.length : 0,
+    })),
+    warnings: d.warnings,
+    ...(d.errors ? { errors: d.errors } : {}),
+  };
+}
+
+/**
  * wpe_promote_to_production — strip diff detail and verbose install fields, keep step outcomes.
  */
 function summarizePromoteToProduction(data: unknown): unknown {
@@ -333,6 +357,7 @@ export const SUMMARIZERS: ReadonlyMap<string, Summarizer> = new Map<string, Summ
   ['wpe_portfolio_usage', summarizePortfolioUsage],
   ['wpe_fleet_health', summarizeFleetHealth],
   ['wpe_promote_to_production', summarizePromoteToProduction],
+  ['wpe_user_audit', summarizeUserAudit],
 ]);
 
 export function hasSummarizer(toolName: string): boolean {

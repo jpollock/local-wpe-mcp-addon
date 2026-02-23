@@ -23,6 +23,8 @@ The core architecture and API coverage shipped as specified. Deviations fall int
 | D-8 | Async provisioning guidance | Not specified | INSTRUCTIONS text + workflow docs include polling guidance | Install and site creation return immediately but take minutes to provision. Composite tools that chain operations after creation fail because the install isn't ready. Guidance directs agents to poll `wpe_get_install` until status is "active". |
 | D-9 | `setup-staging` prompt updated | Referenced `wpe_setup_staging` composite tool | Guides AI through individual tool calls: create install → poll → copy → verify | Prompt template preserved but content updated since the composite tool was removed (D-2). The prompt now encodes the same workflow as step-by-step instructions. |
 
+| D-10 | User management composites added | Not in original spec | 4 tools: `wpe_user_audit`, `wpe_add_user_to_accounts`, `wpe_remove_user_from_accounts`, `wpe_update_user_role` | Agencies managing multiple WP Engine accounts need cross-account user management. The existing generated tools operate on a single account at a time. These composites give agents bulk user onboarding/offboarding, cross-account audit with deduplication by email, and last-owner protection. |
+
 ## Impact Assessment
 
 ### Reduced Capability
@@ -36,6 +38,7 @@ The core architecture and API coverage shipped as specified. Deviations fall int
 - Context-aware summarization (D-6) — prevents tool result overflow in AI clients
 - Better AI discoverability of safety flows (D-7)
 - Reliable async operation handling (D-8, D-9)
+- Cross-account user management (D-10) — bulk user operations for agency workflows
 
 ## Related Documents
 

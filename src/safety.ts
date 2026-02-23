@@ -27,6 +27,9 @@ export const TIER_OVERRIDES: Record<string, SafetyTier> = {
   wpe_create_install: 3,
   wpe_create_account_user: 3,
   wpe_promote_to_production: 3,
+  wpe_add_user_to_accounts: 3,
+  wpe_remove_user_from_accounts: 3,
+  wpe_update_user_role: 3,
 };
 
 const CONFIRMATION_MESSAGES: Record<string, string> = {
@@ -40,6 +43,9 @@ const CONFIRMATION_MESSAGES: Record<string, string> = {
   wpe_create_install: 'This will create a new install on the site.',
   wpe_create_account_user: 'This will grant a new user access to the account.',
   wpe_promote_to_production: 'This will backup production, then overwrite it with staging content (files and database).',
+  wpe_add_user_to_accounts: 'This will add a user to the specified account(s) with the given role.',
+  wpe_remove_user_from_accounts: 'This will remove a user from the specified account(s).',
+  wpe_update_user_role: 'This will change the user\'s role on the specified account.',
 };
 
 const PRE_CHECKS: Record<string, string[]> = {
@@ -68,6 +74,18 @@ const PRE_CHECKS: Record<string, string[]> = {
   wpe_promote_to_production: [
     'Verify the staging install has been tested',
     'Confirm the production install ID is correct',
+  ],
+  wpe_add_user_to_accounts: [
+    'Verify the email address is correct',
+    'Confirm the intended role',
+  ],
+  wpe_remove_user_from_accounts: [
+    'Verify you want to revoke this user\'s access',
+    'Confirm the user email is correct',
+  ],
+  wpe_update_user_role: [
+    'Verify the new role is correct',
+    'Confirm the account ID',
   ],
 };
 

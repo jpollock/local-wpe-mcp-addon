@@ -58,6 +58,12 @@ The agent should return your WP Engine user details.
 - "Promote staging to production for my site"
 - "What needs attention across all my accounts?"
 
+### Manage users
+- "Who has access across all my accounts?"
+- "Add alice@example.com to accounts X, Y, and Z as a full user"
+- "Remove bob@example.com from all accounts"
+- "Change Alice's role to partial on account X"
+
 ### Cross-account views
 - "How many total sites do I have across all accounts?"
 - "Which installs have the most traffic?"

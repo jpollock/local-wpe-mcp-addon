@@ -145,6 +145,34 @@ The agent uses the `security-review` MCP prompt, which checks SSL certificates a
 
 ---
 
+## User Management
+
+### Audit all users across accounts
+
+> "Who has access across all my accounts?"
+
+The agent calls `wpe_user_audit`, which fans out across all accounts, collects users, deduplicates by email, and flags security concerns (no MFA, pending invites). Each user entry shows which accounts they appear on and their role per account.
+
+### Add a user to multiple accounts
+
+> "Add alice@example.com to accounts acc-1, acc-2, and acc-3 as a full user"
+
+The agent calls `wpe_add_user_to_accounts` with the email, name, role, and account IDs. This is a Tier 3 operation that requires confirmation. Accounts where the user already exists are skipped (not treated as errors).
+
+### Remove a user from all accounts
+
+> "Remove bob@example.com from all accounts"
+
+The agent calls `wpe_remove_user_from_accounts` with just the email. This is a Tier 3 operation that requires confirmation. The tool discovers all accounts, finds the user by email on each, and removes them. If the user is the last owner of an account, that account is skipped with a warning.
+
+### Change a user's role
+
+> "Change alice@example.com's role to partial on account acc-1"
+
+The agent calls `wpe_update_user_role` with the email, account ID, and new role. This is a Tier 3 operation. If Alice is the last owner and you're demoting her, the tool refuses with an error explaining that ownership must be transferred first.
+
+---
+
 ## Cross-Account / Portfolio
 
 ### Traffic ranking

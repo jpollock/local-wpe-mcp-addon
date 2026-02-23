@@ -126,15 +126,19 @@ Hand-written tools that chain multiple API calls. Also `wpe_` prefixed.
 | `wpe_setup_staging` | Create staging from production | `site_id`, `source_install_id` | Sequential mutations |
 | `wpe_prepare_go_live` | Pre-launch checklist verification | `install_id` | Multiple per-install calls |
 | `wpe_environment_diff` | Side-by-side comparison of two environments | `install_id_a`, `install_id_b` | Parallel — two installs |
+| `wpe_user_audit` | Cross-account user audit with deduplication and warnings | _(none)_ | Yes — per account |
+| `wpe_add_user_to_accounts` | Add user to multiple accounts | `email`, `first_name`, `last_name`, `roles`, `account_ids`, `install_ids?` | Sequential — per account |
+| `wpe_remove_user_from_accounts` | Remove user from accounts (last-owner protected) | `email`, `account_ids?` | Sequential — per account |
+| `wpe_update_user_role` | Change user role on an account (last-owner protected) | `email`, `account_id`, `roles`, `install_ids?` | No |
 
 ---
 
 ## Summary
 
-- **1:1 tools:** 43 (auto-generated from swagger)
-- **Composite tools:** 10 (hand-written)
-- **Total MCP tools:** 53
-- **Tier 1 (read):** 24
-- **Tier 2 (modify):** 12
-- **Tier 3 (destructive):** 7
-- **Composite (mixed):** 10
+- **1:1 tools:** 50 (auto-generated from swagger)
+- **Composite tools:** 16 (hand-written)
+- **Total MCP tools:** 66
+- **Tier 1 (read):** 24+
+- **Tier 2 (modify):** 12+
+- **Tier 3 (destructive):** 10+
+- **Composite (mixed):** 16

@@ -12,6 +12,10 @@ import { wpePortfolioOverviewDef, wpePortfolioOverviewHandler } from './portfoli
 import { wpePortfolioUsageDef, wpePortfolioUsageHandler } from './portfolio-usage.js';
 import { wpeFleetHealthDef, wpeFleetHealthHandler } from './fleet-health.js';
 import { wpePromoteToProductionDef, wpePromoteToProductionHandler } from './promote-to-production.js';
+import { wpeUserAuditDef, wpeUserAuditHandler } from './user-audit.js';
+import { wpeAddUserToAccountsDef, wpeAddUserToAccountsHandler } from './add-user-to-accounts.js';
+import { wpeRemoveUserFromAccountsDef, wpeRemoveUserFromAccountsHandler } from './remove-user-from-accounts.js';
+import { wpeUpdateUserRoleDef, wpeUpdateUserRoleHandler } from './update-user-role.js';
 
 export const allCompositeTools: ToolRegistration[] = [
   { def: wpeAccountOverviewDef, handler: wpeAccountOverviewHandler },
@@ -26,4 +30,8 @@ export const allCompositeTools: ToolRegistration[] = [
   { def: wpePortfolioUsageDef, handler: wpePortfolioUsageHandler },
   { def: wpeFleetHealthDef, handler: wpeFleetHealthHandler },
   { def: wpePromoteToProductionDef, handler: wpePromoteToProductionHandler },
+  { def: wpeUserAuditDef, handler: wpeUserAuditHandler },
+  { def: wpeAddUserToAccountsDef, handler: wpeAddUserToAccountsHandler },
+  { def: wpeRemoveUserFromAccountsDef, handler: wpeRemoveUserFromAccountsHandler },
+  { def: wpeUpdateUserRoleDef, handler: wpeUpdateUserRoleHandler },
 ];

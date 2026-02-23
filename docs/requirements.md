@@ -57,6 +57,10 @@ Beyond 1:1 mapping, provide tools that chain multiple API calls and encode domai
 | `wpe_environment_diff` | Side-by-side comparison of two installs | Parallel — two installs |
 | `wpe_portfolio_overview` | All accounts, sites, and installs in one view | Yes — per account | **Added** — Cross-account queries essential for multi-account users. See `docs/deviations.md` D-5. |
 | `wpe_portfolio_usage` | Usage ranked across all accounts | Yes — per account | **Added** — Same rationale as portfolio_overview. |
+| `wpe_user_audit` | Cross-account user report with deduplication by email, MFA/invite warnings | Yes — per account | **Added** — See `docs/deviations.md` D-10. |
+| `wpe_add_user_to_accounts` | Add a user to multiple accounts with a specified role | Sequential — per account | **Added** — See `docs/deviations.md` D-10. |
+| `wpe_remove_user_from_accounts` | Remove a user from one or all accounts, last-owner protected | Sequential — per account | **Added** — See `docs/deviations.md` D-10. |
+| `wpe_update_user_role` | Change a user's role on an account, last-owner protected | No — single account | **Added** — See `docs/deviations.md` D-10. |
 
 **Fan-out pattern requirements:**
 - Respect CAPI rate limits (handle 429 responses)
@@ -246,7 +250,7 @@ Tools that return large responses register a summarizer in `src/summarize.ts`. T
 - `summary=false`: Returns full API response
 - Tools without a registered summarizer are unaffected
 
-**Current summarizers:** 11 (5 for generated tools, 6 for composite tools). See `docs/deviations.md` D-6.
+**Current summarizers:** 14 (5 for generated tools, 9 for composite tools). See `docs/deviations.md` D-6.
 
 ---
 
